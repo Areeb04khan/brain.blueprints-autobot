@@ -265,7 +265,7 @@ def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict)
         font_title = ImageFont.truetype(FONT_SERIF,  32)
         font_day   = ImageFont.truetype(FONT_ITALIC, 19)
         font_main  = ImageFont.truetype(FONT_SERIF,  38)
-        font_trans = ImageFont.truetype(FONT_ITALIC, 20)
+        font_trans = ImageFont.truetype(FONT_ITALIC, 17)
         font_brand = ImageFont.truetype(FONT_SANS,   17)
     except:
         font_title = font_day = font_main = font_trans = font_brand = ImageFont.load_default()
