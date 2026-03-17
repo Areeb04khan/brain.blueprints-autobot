@@ -2,15 +2,21 @@ name: Daily Shayari Post
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # 3:00 AM UTC = 8:30 AM IST daily
-  workflow_dispatch:      # Allows manual trigger from GitHub dashboard
+    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST — Photo
+    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST — Reel
+  workflow_dispatch:
+    inputs:
+      post_type:
+        description: 'Post type: photo or reel'
+        required: true
+        default: 'photo'
 
 jobs:
   post-shayari:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -18,10 +24,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-noto-core fonts-noto fonts-urdu ffmpeg
+          fc-cache -f -v
+
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Restore progress file
+      - name: Restore progress
         uses: actions/cache@v4
         with:
           path: progress.json
@@ -29,15 +41,27 @@ jobs:
           restore-keys: |
             progress-
 
+      - name: Determine post type
+        id: post_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.post_type }}" >> $GITHUB_OUTPUT
+          elif [ "$(date -u +%H)" = "02" ]; then
+            echo "type=photo" >> $GITHUB_OUTPUT
+          else
+            echo "type=reel" >> $GITHUB_OUTPUT
+          fi
+
       - name: Run Shayari Bot
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
-        run: python poster.py --run-once
+          POST_TYPE: ${{ steps.post_type.outputs.type }}
+        run: python poster.py
 
-      - name: Save progress file
+      - name: Save progress
         uses: actions/cache/save@v4
         if: always()
         with:

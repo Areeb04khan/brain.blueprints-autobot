@@ -1,33 +1,44 @@
 """
-Shayari Instagram Automation Bot
-- Generates daily Shayari using Google Gemini API
-- Creates beautiful 1080x1080 images
-- Posts to Instagram via Graph API
-- Designed to run on GitHub Actions (zero cost)
+Shayari Instagram Automation Bot v2
+- Vintage manuscript aesthetic
+- Urdu Nastaliq font support
+- Daily photo (8 AM IST) + Reel (7 PM IST)
+- Runs on GitHub Actions (zero cost)
 """
 
 from google import genai
-from google.genai import types
 import requests
 import json
 import os
 import sys
 import time
 import textwrap
+import random
+import math
 from datetime import datetime
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import base64
 
 # ============================================================
-# CONFIGURATION — reads from environment variables (GitHub Secrets)
+# CONFIGURATION
 # ============================================================
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 IMGBB_API_KEY          = os.environ.get("IMGBB_API_KEY", "")
+POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
+
+# Your Instagram handle
+IG_HANDLE = "@ak_apak"
+
+# Font paths (installed by workflow)
+FONT_URDU   = "/usr/share/fonts/truetype/noto/NotoNastaliqUrdu-Regular.ttf"
+FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
+FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ============================================================
-# POET SCHEDULE — 30 days each
+# POET SCHEDULE
 # ============================================================
 POET_SCHEDULE = [
     {"name": "Mirza Ghalib",    "era": "1797–1869"},
@@ -45,21 +56,45 @@ POET_SCHEDULE = [
 ]
 
 # ============================================================
-# COLOR PALETTES — one per poet
+# VINTAGE MANUSCRIPT PALETTES — warm, aged, ink-on-paper feel
 # ============================================================
 PALETTES = [
-    {"bg": "#120a1e", "text": "#f5e6c8", "accent": "#c9a96e", "sub": "#7a5c35"},
-    {"bg": "#0b1a0b", "text": "#e8f5e9", "accent": "#81c784", "sub": "#388e3c"},
-    {"bg": "#1a0a0e", "text": "#fce4ec", "accent": "#f48fb1", "sub": "#c2185b"},
-    {"bg": "#08081a", "text": "#e3f2fd", "accent": "#90caf9", "sub": "#1565c0"},
-    {"bg": "#1a1200", "text": "#fff8e1", "accent": "#ffd54f", "sub": "#e65100"},
-    {"bg": "#0f0f0f", "text": "#f0f0f0", "accent": "#bdbdbd", "sub": "#616161"},
-    {"bg": "#1a0f05", "text": "#fbe9e7", "accent": "#ff8a65", "sub": "#bf360c"},
-    {"bg": "#04080f", "text": "#e0f7fa", "accent": "#4dd0e1", "sub": "#006064"},
-    {"bg": "#100518", "text": "#f3e5f5", "accent": "#ce93d8", "sub": "#6a1b9a"},
-    {"bg": "#0a1a10", "text": "#e8f5e9", "accent": "#a5d6a7", "sub": "#2e7d32"},
-    {"bg": "#1a1010", "text": "#fff3e0", "accent": "#ffb74d", "sub": "#e65100"},
-    {"bg": "#0a0a14", "text": "#ede7f6", "accent": "#9575cd", "sub": "#4527a0"},
+    # Aged parchment — warm amber ink
+    {"bg": "#f5e6c8", "bg2": "#ede0b5", "text": "#2c1810", "accent": "#8b4513",
+     "sub": "#6b3410", "border": "#c9a96e", "ink": "#3d1f0d"},
+    # Weathered cream — deep indigo ink
+    {"bg": "#f0ead6", "bg2": "#e8dfc4", "text": "#1a1a3e", "accent": "#4a3f8a",
+     "sub": "#2d2760", "border": "#9b8cc0", "ink": "#0f0f2e"},
+    # Old ivory — forest green ink
+    {"bg": "#f2edd8", "bg2": "#eae5c8", "text": "#1a2e1a", "accent": "#2d5a1b",
+     "sub": "#1a3a0f", "border": "#7a9e5a", "ink": "#0f1e0f"},
+    # Antique white — burgundy ink
+    {"bg": "#f4ebe0", "bg2": "#ecdfd0", "text": "#2e0f1a", "accent": "#8b1a2a",
+     "sub": "#5a0f1a", "border": "#c07080", "ink": "#1e0810"},
+    # Faded sepia — dark coffee ink
+    {"bg": "#f0e4c8", "bg2": "#e8dab8", "text": "#1e1208", "accent": "#5c3a1e",
+     "sub": "#3a2010", "border": "#a07840", "ink": "#120c04"},
+    # Aged vellum — prussian blue ink
+    {"bg": "#f3ead5", "bg2": "#ebdfc5", "text": "#0a1a2e", "accent": "#0f3460",
+     "sub": "#0a2040", "border": "#4a7ab0", "ink": "#061018"},
+    # Worn paper — rust ink
+    {"bg": "#f1e8d0", "bg2": "#e9ddc0", "text": "#2a1008", "accent": "#8b3010",
+     "sub": "#5a1e08", "border": "#c06040", "ink": "#1a0804"},
+    # Cream linen — charcoal ink
+    {"bg": "#f2ece0", "bg2": "#eae4d4", "text": "#1a1a1a", "accent": "#3a3a3a",
+     "sub": "#555555", "border": "#888888", "ink": "#0a0a0a"},
+    # Antique rose — deep plum ink
+    {"bg": "#f4e8e0", "bg2": "#ecdcd4", "text": "#2a0a1e", "accent": "#6b1a4a",
+     "sub": "#4a0f32", "border": "#b06090", "ink": "#1a0412"},
+    # Old gold — dark teal ink
+    {"bg": "#f2e8c8", "bg2": "#eaddb8", "text": "#081e1e", "accent": "#1a5a5a",
+     "sub": "#0f3a3a", "border": "#509090", "ink": "#041010"},
+    # Bleached parchment — mahogany ink
+    {"bg": "#f5edd8", "bg2": "#ede3c8", "text": "#1e0e06", "accent": "#6b2010",
+     "sub": "#4a1608", "border": "#b07050", "ink": "#140804"},
+    # Faded linen — deep violet ink
+    {"bg": "#f0eadc", "bg2": "#e8dfcc", "text": "#180a2a", "accent": "#4a1a7a",
+     "sub": "#2e0f50", "border": "#8060b0", "ink": "#0e0618"},
 ]
 
 # ============================================================
@@ -88,7 +123,7 @@ POET_HASHTAGS = {
 
 
 # ============================================================
-# STEP 1: Generate Shayari using Gemini
+# STEP 1: Generate Shayari
 # ============================================================
 def generate_shayari(poet: dict, day_number: int) -> dict:
     client = genai.Client(api_key=GEMINI_API_KEY)
@@ -100,7 +135,7 @@ Today is Day {day_number} of 30 for: {poet['name']} ({poet['era']})
 Tasks:
 1. Write an original Shayari (4-6 lines) deeply inspired by {poet['name']}'s style and themes
 2. Write it in Roman Urdu/Hindi transliteration
-3. Include the original Urdu/Hindi script version
+3. Include the original Urdu script version (proper Urdu, right to left)
 4. Write a short English translation (1-2 lines)
 5. Write an engaging Instagram caption (2-3 sentences) mentioning a real fact about the poet's life connected to this Shayari's theme. End with a question to drive comments.
 6. List 3 niche hashtags specific to today's theme (not the poet's name)
@@ -108,7 +143,7 @@ Tasks:
 Return ONLY valid JSON, no markdown, no explanation:
 {{
   "shayari_roman": "line1\\nline2\\nline3\\nline4",
-  "shayari_script": "...",
+  "shayari_urdu": "...",
   "english_translation": "...",
   "caption": "...",
   "theme_hashtags": ["tag1", "tag2", "tag3"],
@@ -116,7 +151,7 @@ Return ONLY valid JSON, no markdown, no explanation:
 }}"""
 
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
@@ -124,68 +159,178 @@ Return ONLY valid JSON, no markdown, no explanation:
 
 
 # ============================================================
-# STEP 2: Create beautiful image
+# STEP 2: Draw manuscript texture background
+# ============================================================
+def draw_manuscript_bg(img: Image.Image, draw: ImageDraw.ImageDraw, palette: dict):
+    w, h = img.size
+
+    # Subtle noise texture — aged paper feel
+    for _ in range(2000):
+        x = random.randint(0, w)
+        y = random.randint(0, h)
+        r = random.randint(0, 2)
+        opacity = random.randint(10, 40)
+        # Darker speckles for age spots
+        color = tuple(max(0, c - random.randint(10, 30)) for c in ImageDraw.ImageDraw(img).getfill()) if False else (
+            int(palette["ink"][1:3], 16),
+            int(palette["ink"][3:5], 16),
+            int(palette["ink"][5:7], 16),
+            opacity
+        )
+        draw.ellipse([x-r, y-r, x+r, y+r], fill=palette["bg2"])
+
+    # Subtle horizontal lines — like old paper grain
+    for y in range(0, h, random.randint(18, 28)):
+        alpha = random.randint(5, 20)
+        line_color = palette["bg2"]
+        draw.line([(0, y), (w, y)], fill=line_color, width=1)
+
+
+# ============================================================
+# STEP 3: Draw ornate manuscript border
+# ============================================================
+def draw_ornate_border(draw: ImageDraw.ImageDraw, palette: dict, w: int, h: int):
+    border_color = palette["border"]
+    ink = palette["ink"]
+
+    # Outer frame
+    draw.rectangle([30, 30, w-30, h-30], outline=border_color, width=2)
+    # Inner frame
+    draw.rectangle([45, 45, w-45, h-45], outline=border_color, width=1)
+    # Innermost thin line
+    draw.rectangle([55, 55, w-55, h-55], outline=palette["sub"], width=1)
+
+    # Corner ornaments — hand-drawn cross pattern
+    corners = [(30, 30), (w-30, 30), (30, h-30), (w-30, h-30)]
+    for cx, cy in corners:
+        # Diamond
+        size = 14
+        draw.polygon([
+            (cx, cy - size), (cx + size, cy),
+            (cx, cy + size), (cx - size, cy)
+        ], outline=border_color, fill=palette["bg2"])
+        # Center dot
+        draw.ellipse([cx-3, cy-3, cx+3, cy+3], fill=border_color)
+        # Small circles at tips
+        for dx, dy in [(0, -size), (size, 0), (0, size), (-size, 0)]:
+            draw.ellipse([cx+dx-2, cy+dy-2, cx+dx+2, cy+dy+2], fill=border_color)
+
+    # Side ornaments — middle of each border
+    mid_ornaments = [(w//2, 30), (w//2, h-30), (30, h//2), (w-30, h//2)]
+    for mx, my in mid_ornaments:
+        draw.ellipse([mx-4, my-4, mx+4, my+4], fill=border_color)
+        draw.ellipse([mx-8, my-8, mx+8, my+8], outline=border_color, width=1)
+
+    # Top decorative header band
+    draw.rectangle([55, 55, w-55, 160], outline=border_color, width=1)
+
+    # Bottom decorative footer band
+    draw.rectangle([55, h-160, w-55, h-55], outline=border_color, width=1)
+
+    # Thin divider lines inside header/footer
+    draw.line([(80, 100), (w-80, 100)], fill=palette["sub"], width=1)
+    draw.line([(80, h-100), (w-80, h-100)], fill=palette["sub"], width=1)
+
+
+# ============================================================
+# STEP 4: Create vintage manuscript image
 # ============================================================
 def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict) -> str:
-    img  = Image.new("RGB", (1080, 1080), color=palette["bg"])
+    W, H = 1080, 1080
+    img  = Image.new("RGB", (W, H), color=palette["bg"])
     draw = ImageDraw.Draw(img)
 
-    # Corner ornaments
-    for x, y in [(60, 60), (1020, 60), (60, 1020), (1020, 1020)]:
-        draw.ellipse([x-4, y-4, x+4, y+4], fill=palette["accent"])
-        draw.ellipse([x-22, y-22, x+22, y+22], outline=palette["accent"], width=1)
-        draw.ellipse([x-38, y-38, x+38, y+38], outline=palette["sub"], width=1)
+    # Paper texture
+    draw_manuscript_bg(img, draw, palette)
 
-    # Decorative lines
-    draw.line([(100, 130), (980, 130)], fill=palette["accent"], width=1)
-    draw.line([(100, 950), (980, 950)], fill=palette["accent"], width=1)
+    # Ornate border
+    draw_ornate_border(draw, palette, W, H)
 
-    # Load fonts (GitHub Actions uses Ubuntu — these fonts are available)
+    # Load fonts
     try:
-        font_poet   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 32)
-        font_day    = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
-        font_main   = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 44)
-        font_script = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf", 26)
-        font_trans  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 20)
-        font_brand  = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+        font_title  = ImageFont.truetype(FONT_SERIF,  34)
+        font_day    = ImageFont.truetype(FONT_ITALIC, 20)
+        font_main   = ImageFont.truetype(FONT_SERIF,  46)
+        font_trans  = ImageFont.truetype(FONT_ITALIC, 22)
+        font_brand  = ImageFont.truetype(FONT_SANS,   18)
+        font_deco   = ImageFont.truetype(FONT_SERIF,  28)
     except:
-        font_poet = font_day = font_main = font_script = font_trans = font_brand = ImageFont.load_default()
+        font_title = font_day = font_main = font_trans = font_brand = font_deco = ImageFont.load_default()
+
+    try:
+        font_urdu = ImageFont.truetype(FONT_URDU, 32)
+    except:
+        font_urdu = font_trans
 
     def center(text, y, font, color):
         bbox = draw.textbbox((0, 0), text, font=font)
-        w = bbox[2] - bbox[0]
-        draw.text(((1080 - w) / 2, y), text, font=font, fill=color)
+        tw = bbox[2] - bbox[0]
+        draw.text(((W - tw) / 2, y), text, font=font, fill=color)
 
-    # Poet name and day
-    center(f"— {poet['name']} —", 150, font_poet, palette["accent"])
-    center(f"Day {day_number} of 30  ·  {poet['era']}", 200, font_day, palette["sub"])
+    # Decorative top motif — bismillah-style ornament
+    center("❧  ✦  ❧", 65, font_deco, palette["border"])
 
-    # Main Shayari
+    # Poet name
+    center(f"— {poet['name']} —", 110, font_title, palette["accent"])
+
+    # Day counter
+    center(f"Day {day_number} of 30   ·   {poet['era']}", 158, font_day, palette["sub"])
+
+    # Thin divider below header
+    draw.line([(80, 185), (W-80, 185)], fill=palette["border"], width=1)
+
+    # ✦ Main Shayari — Roman
     lines = shayari_data["shayari_roman"].strip().split("\n")
-    y_pos = 300
+    y_pos = 220
     for line in lines:
-        for wline in textwrap.wrap(line.strip(), width=36):
+        wrapped = textwrap.wrap(line.strip(), width=34)
+        for wline in wrapped:
             center(wline, y_pos, font_main, palette["text"])
-            y_pos += 62
-    y_pos += 20
+            y_pos += 65
+    y_pos += 15
 
-    # Divider
-    draw.line([(250, y_pos), (830, y_pos)], fill=palette["sub"], width=1)
-    y_pos += 25
+    # Ornamental divider
+    center("~  ✦  ~", y_pos, font_deco, palette["border"])
+    y_pos += 50
 
-    # Script version
-    for line in textwrap.wrap(shayari_data["shayari_script"], width=42)[:2]:
-        center(line, y_pos, font_script, palette["sub"])
-        y_pos += 38
+    # Urdu script
+    urdu_text = shayari_data.get("shayari_urdu", "")
+    if urdu_text:
+        urdu_lines = urdu_text.strip().split("\n")
+        for line in urdu_lines[:3]:
+            line = line.strip()
+            if line:
+                bbox = draw.textbbox((0, 0), line, font=font_urdu)
+                tw = bbox[2] - bbox[0]
+                draw.text(((W - tw) / 2, y_pos), line, font=font_urdu, fill=palette["sub"])
+                y_pos += 48
     y_pos += 10
 
     # English translation
-    for line in textwrap.wrap(f'"{shayari_data["english_translation"]}"', width=52):
+    trans = f'"{shayari_data["english_translation"]}"'
+    for line in textwrap.wrap(trans, width=50):
         center(line, y_pos, font_trans, palette["accent"])
-        y_pos += 30
+        y_pos += 32
+    y_pos += 10
 
-    # Brand handle
-    center("@YourInstagramHandle", 970, font_brand, palette["sub"])
+    # Bottom divider
+    draw.line([(80, H-155), (W-80, H-155)], fill=palette["border"], width=1)
+
+    # Bottom motif
+    center("❧  ✦  ❧", H-140, font_deco, palette["border"])
+
+    # Instagram handle
+    center(IG_HANDLE, H-95, font_brand, palette["sub"])
+
+    # Slight vignette — darken edges for aged look
+    vignette = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    vdraw = ImageDraw.Draw(vignette)
+    for i in range(60):
+        alpha = int(i * 1.2)
+        vdraw.rectangle([i, i, W-i, H-i], outline=(0, 0, 0, alpha))
+    img = img.convert("RGBA")
+    img = Image.alpha_composite(img, vignette)
+    img = img.convert("RGB")
 
     os.makedirs("output", exist_ok=True)
     filename = f"output/shayari_day{day_number}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
@@ -195,7 +340,55 @@ def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict)
 
 
 # ============================================================
-# STEP 3: Upload to imgbb
+# STEP 5: Create Reel video from image
+# ============================================================
+def create_reel(image_path: str) -> str:
+    try:
+        from moviepy.editor import ImageClip, CompositeVideoClip
+        import numpy as np
+
+        duration = 15  # seconds
+
+        # Ken Burns zoom effect
+        def zoom_effect(t):
+            zoom = 1 + 0.04 * (t / duration)  # subtle 4% zoom over 15s
+            return zoom
+
+        clip = ImageClip(image_path, duration=duration)
+        W, H = clip.size
+
+        def make_frame(t):
+            zoom = zoom_effect(t)
+            frame = clip.get_frame(t)
+            frame_img = Image.fromarray(frame)
+            new_w = int(W * zoom)
+            new_h = int(H * zoom)
+            frame_img = frame_img.resize((new_w, new_h), Image.LANCZOS)
+            # Center crop back to original size
+            left = (new_w - W) // 2
+            top  = (new_h - H) // 2
+            frame_img = frame_img.crop((left, top, left + W, top + H))
+            return np.array(frame_img)
+
+        final = clip.fl(lambda gf, t: make_frame(t), apply_to=['mask'])
+        reel_path = image_path.replace(".jpg", "_reel.mp4")
+        final.write_videofile(
+            reel_path,
+            fps=24,
+            codec="libx264",
+            audio=False,
+            verbose=False,
+            logger=None
+        )
+        print(f"✅ Reel saved: {reel_path}")
+        return reel_path
+    except Exception as e:
+        print(f"❌ Reel creation failed: {e}")
+        return None
+
+
+# ============================================================
+# STEP 6: Upload image to imgbb
 # ============================================================
 def upload_image(image_path: str) -> str:
     with open(image_path, "rb") as f:
@@ -212,16 +405,16 @@ def upload_image(image_path: str) -> str:
 
 
 # ============================================================
-# STEP 4: Post to Instagram
+# STEP 7: Post photo to Instagram
 # ============================================================
-def post_to_instagram(image_url: str, shayari_data: dict, poet: dict) -> bool:
+def post_photo(image_url: str, shayari_data: dict, poet: dict) -> bool:
     poet_tags   = POET_HASHTAGS.get(poet["name"], [])
     all_tags    = BASE_HASHTAGS + poet_tags + shayari_data.get("theme_hashtags", [])
     hashtag_str = " ".join([f"#{t}" for t in all_tags[:10]])
     caption     = f"{shayari_data['caption']}\n\n{hashtag_str}"
 
     container = requests.post(
-        f"https://graph.facebook.com/v18.0/{INSTAGRAM_USER_ID}/media",
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": INSTAGRAM_ACCESS_TOKEN}
     ).json()
 
@@ -233,15 +426,80 @@ def post_to_instagram(image_url: str, shayari_data: dict, poet: dict) -> bool:
     time.sleep(5)
 
     publish = requests.post(
-        f"https://graph.facebook.com/v18.0/{INSTAGRAM_USER_ID}/media_publish",
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
         data={"creation_id": container["id"], "access_token": INSTAGRAM_ACCESS_TOKEN}
     ).json()
 
     if "id" in publish:
-        print(f"🎉 Posted! ID: {publish['id']}")
+        print(f"🎉 Photo posted! ID: {publish['id']}")
         return True
 
     print(f"❌ Publish error: {publish}")
+    return False
+
+
+# ============================================================
+# STEP 8: Post Reel to Instagram
+# ============================================================
+def post_reel(video_path: str, shayari_data: dict, poet: dict) -> bool:
+    # Upload video to imgbb as file
+    with open(video_path, "rb") as f:
+        video_data = base64.b64encode(f.read()).decode("utf-8")
+
+    # Upload to imgbb
+    result = requests.post(
+        "https://api.imgbb.com/1/upload",
+        data={"key": IMGBB_API_KEY, "image": video_data}
+    ).json()
+
+    if not result.get("success"):
+        print(f"❌ Video upload failed: {result}")
+        return False
+
+    video_url = result["data"]["url"]
+
+    poet_tags   = POET_HASHTAGS.get(poet["name"], [])
+    all_tags    = BASE_HASHTAGS + poet_tags + shayari_data.get("theme_hashtags", [])
+    hashtag_str = " ".join([f"#{t}" for t in all_tags[:10]])
+    caption     = f"{shayari_data['caption']}\n\n{hashtag_str}"
+
+    container = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
+        data={
+            "video_url": video_url,
+            "media_type": "REELS",
+            "caption": caption,
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
+    ).json()
+
+    if "id" not in container:
+        print(f"❌ Reel container error: {container}")
+        return False
+
+    print(f"✅ Reel container: {container['id']}")
+
+    # Wait for video processing
+    for _ in range(10):
+        time.sleep(10)
+        status = requests.get(
+            f"https://graph.instagram.com/v21.0/{container['id']}",
+            params={"fields": "status_code", "access_token": INSTAGRAM_ACCESS_TOKEN}
+        ).json()
+        print(f"   Status: {status.get('status_code')}")
+        if status.get("status_code") == "FINISHED":
+            break
+
+    publish = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
+        data={"creation_id": container["id"], "access_token": INSTAGRAM_ACCESS_TOKEN}
+    ).json()
+
+    if "id" in publish:
+        print(f"🎉 Reel posted! ID: {publish['id']}")
+        return True
+
+    print(f"❌ Reel publish error: {publish}")
     return False
 
 
@@ -265,7 +523,7 @@ def save_progress(p: dict):
 # ============================================================
 def run():
     print(f"\n{'='*50}")
-    print(f"🌙 Shayari Bot — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"🌙 Shayari Bot v2 — {datetime.now().strftime('%Y-%m-%d %H:%M')} — {POST_TYPE.upper()}")
     print(f"{'='*50}")
 
     p          = load_progress()
@@ -274,33 +532,54 @@ def run():
     poet       = POET_SCHEDULE[poet_index]
     palette    = PALETTES[poet_index % len(PALETTES)]
 
-    print(f"📖 {poet['name']} | Day {day}/30")
+    print(f"📖 {poet['name']} | Day {day}/30 | Posting: {POST_TYPE}")
 
+    # Generate Shayari
     print("✍️  Generating Shayari...")
     shayari_data = generate_shayari(poet, day)
     print(f"   Theme: {shayari_data['theme']}")
 
+    # Create image
     print("🎨 Creating image...")
     image_path = create_image(shayari_data, poet, day, palette)
 
-    print("☁️  Uploading...")
-    image_url = upload_image(image_path)
+    if POST_TYPE == "photo":
+        # Upload and post photo
+        print("☁️  Uploading image...")
+        image_url = upload_image(image_path)
+        print("📸 Posting photo...")
+        success = post_photo(image_url, shayari_data, poet)
 
-    print("📱 Posting...")
-    success = post_to_instagram(image_url, shayari_data, poet)
+    elif POST_TYPE == "reel":
+        # Create and post reel
+        print("🎬 Creating Reel...")
+        reel_path = create_reel(image_path)
+        if reel_path:
+            print("📱 Posting Reel...")
+            success = post_reel(reel_path, shayari_data, poet)
+        else:
+            # Fallback to photo if reel creation fails
+            print("⚠️  Reel failed, falling back to photo...")
+            image_url = upload_image(image_path)
+            success = post_photo(image_url, shayari_data, poet)
+    else:
+        print(f"❌ Unknown POST_TYPE: {POST_TYPE}")
+        sys.exit(1)
 
     if success:
-        p["total_posts"] += 1
-        if day >= 30:
-            p["day"] = 1
-            p["poet_index"] += 1
-            print(f"🎊 30 days of {poet['name']} done! Next poet up.")
-        else:
-            p["day"] = day + 1
-        save_progress(p)
-        print(f"✅ Total posts: {p['total_posts']}")
+        # Only advance day counter after photo post (not reel — same day)
+        if POST_TYPE == "photo":
+            p["total_posts"] += 1
+            if day >= 30:
+                p["day"] = 1
+                p["poet_index"] += 1
+                print(f"🎊 30 days of {poet['name']} done! Next poet up.")
+            else:
+                p["day"] = day + 1
+            save_progress(p)
+        print(f"✅ Done! Total posts: {p['total_posts']}")
     else:
-        print("❌ Failed. Will retry tomorrow.")
+        print("❌ Failed.")
         sys.exit(1)
 
 
