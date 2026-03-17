@@ -6,7 +6,8 @@ Shayari Instagram Automation Bot
 - Designed to run on GitHub Actions (zero cost)
 """
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import requests
 import json
 import os
@@ -90,8 +91,7 @@ POET_HASHTAGS = {
 # STEP 1: Generate Shayari using Gemini
 # ============================================================
 def generate_shayari(poet: dict, day_number: int) -> dict:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    client = genai.Client(api_key=GEMINI_API_KEY)
 
     prompt = f"""You run an Instagram Shayari account dedicated to one poet for 30 days.
 
@@ -115,7 +115,10 @@ Return ONLY valid JSON, no markdown, no explanation:
   "theme": "love/loss/nature/spirituality/resistance/etc"
 }}"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-1.5-flash",
+        contents=prompt
+    )
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
     return json.loads(raw)
 
