@@ -235,99 +235,102 @@ def draw_ornate_border(draw: ImageDraw.ImageDraw, palette: dict, w: int, h: int)
 # ============================================================
 # STEP 4: Create vintage manuscript image
 # ============================================================
+def draw_diamond_motif(draw, cx, cy, size, color):
+    """Geometric diamond ornament — no special characters needed."""
+    draw.polygon([
+        (cx, cy - size), (cx + size, cy),
+        (cx, cy + size), (cx - size, cy)
+    ], outline=color)
+    draw.ellipse([cx-2, cy-2, cx+2, cy+2], fill=color)
+    for dx, dy in [(0, -size-5), (size+5, 0), (0, size+5), (-size-5, 0)]:
+        draw.ellipse([cx+dx-2, cy+dy-2, cx+dx+2, cy+dy+2], fill=color)
+
+def draw_divider_ornament(draw, cx, cy, color):
+    """Horizontal divider with central diamond."""
+    draw.line([(cx-90, cy), (cx-18, cy)], fill=color, width=1)
+    draw.line([(cx+18, cy), (cx+90, cy)], fill=color, width=1)
+    draw_diamond_motif(draw, cx, cy, 7, color)
+
 def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict) -> str:
     W, H = 1080, 1080
     img  = Image.new("RGB", (W, H), color=palette["bg"])
     draw = ImageDraw.Draw(img)
 
-    # Paper texture
+    # Paper texture + ornate border
     draw_manuscript_bg(img, draw, palette)
-
-    # Ornate border
     draw_ornate_border(draw, palette, W, H)
 
     # Load fonts
     try:
-        font_title  = ImageFont.truetype(FONT_SERIF,  34)
-        font_day    = ImageFont.truetype(FONT_ITALIC, 20)
-        font_main   = ImageFont.truetype(FONT_SERIF,  46)
-        font_trans  = ImageFont.truetype(FONT_ITALIC, 22)
-        font_brand  = ImageFont.truetype(FONT_SANS,   18)
-        font_deco   = ImageFont.truetype(FONT_SERIF,  28)
+        font_title = ImageFont.truetype(FONT_SERIF,  32)
+        font_day   = ImageFont.truetype(FONT_ITALIC, 19)
+        font_main  = ImageFont.truetype(FONT_SERIF,  38)
+        font_trans = ImageFont.truetype(FONT_ITALIC, 20)
+        font_brand = ImageFont.truetype(FONT_SANS,   17)
     except:
-        font_title = font_day = font_main = font_trans = font_brand = font_deco = ImageFont.load_default()
+        font_title = font_day = font_main = font_trans = font_brand = ImageFont.load_default()
 
     try:
-        font_urdu = ImageFont.truetype(FONT_URDU, 32)
+        font_urdu = ImageFont.truetype(FONT_URDU, 30)
     except:
         font_urdu = font_trans
 
     def center(text, y, font, color):
         bbox = draw.textbbox((0, 0), text, font=font)
-        tw = bbox[2] - bbox[0]
+        tw   = bbox[2] - bbox[0]
         draw.text(((W - tw) / 2, y), text, font=font, fill=color)
 
-    # Decorative top motif — bismillah-style ornament
-    center("❧  ✦  ❧", 65, font_deco, palette["border"])
+    # ── HEADER (y: 60–180) ───────────────────────────────────
+    draw_divider_ornament(draw, W//2, 78, palette["border"])
+    center(f"-- {poet['name']} --", 103, font_title, palette["accent"])
+    center(f"Day {day_number} of 30   .   {poet['era']}", 148, font_day, palette["sub"])
+    draw.line([(80, 175), (W-80, 175)], fill=palette["border"], width=1)
 
-    # Poet name
-    center(f"— {poet['name']} —", 110, font_title, palette["accent"])
-
-    # Day counter
-    center(f"Day {day_number} of 30   ·   {poet['era']}", 158, font_day, palette["sub"])
-
-    # Thin divider below header
-    draw.line([(80, 185), (W-80, 185)], fill=palette["border"], width=1)
-
-    # ✦ Main Shayari — Roman
+    # ── SHAYARI (vertically centered in y: 190–680) ──────────
     lines = shayari_data["shayari_roman"].strip().split("\n")
-    y_pos = 220
+    all_wrapped = []
     for line in lines:
-        wrapped = textwrap.wrap(line.strip(), width=34)
-        for wline in wrapped:
-            center(wline, y_pos, font_main, palette["text"])
-            y_pos += 65
-    y_pos += 15
+        wrapped = textwrap.wrap(line.strip(), width=40)
+        all_wrapped.extend(wrapped if wrapped else [""])
 
-    # Ornamental divider
-    center("~  ✦  ~", y_pos, font_deco, palette["border"])
-    y_pos += 50
+    line_h  = 52
+    zone_top, zone_bot = 190, 680
+    total_h = len(all_wrapped) * line_h
+    y_pos   = zone_top + max(0, (zone_bot - zone_top - total_h) // 2)
 
-    # Urdu script
+    for wline in all_wrapped:
+        center(wline, y_pos, font_main, palette["text"])
+        y_pos += line_h
+
+    # ── DIVIDER (y: 695) ─────────────────────────────────────
+    draw_divider_ornament(draw, W//2, 700, palette["border"])
+
+    # ── URDU SCRIPT (y: 720–800) ─────────────────────────────
+    y_pos = 722
     urdu_text = shayari_data.get("shayari_urdu", "")
     if urdu_text:
-        urdu_lines = urdu_text.strip().split("\n")
-        for line in urdu_lines[:3]:
-            line = line.strip()
-            if line:
-                bbox = draw.textbbox((0, 0), line, font=font_urdu)
-                tw = bbox[2] - bbox[0]
-                draw.text(((W - tw) / 2, y_pos), line, font=font_urdu, fill=palette["sub"])
-                y_pos += 48
-    y_pos += 10
+        for line in [l.strip() for l in urdu_text.strip().split("\n") if l.strip()][:2]:
+            bbox = draw.textbbox((0, 0), line, font=font_urdu)
+            tw   = bbox[2] - bbox[0]
+            draw.text(((W - tw) / 2, y_pos), line, font=font_urdu, fill=palette["sub"])
+            y_pos += 44
 
-    # English translation
-    trans = f'"{shayari_data["english_translation"]}"'
-    for line in textwrap.wrap(trans, width=50):
+    # ── TRANSLATION (y: 810–870) ─────────────────────────────
+    y_pos = max(y_pos + 8, 810)
+    for line in textwrap.wrap(f'"{shayari_data["english_translation"]}"', width=56):
         center(line, y_pos, font_trans, palette["accent"])
-        y_pos += 32
-    y_pos += 10
+        y_pos += 28
 
-    # Bottom divider
-    draw.line([(80, H-155), (W-80, H-155)], fill=palette["border"], width=1)
+    # ── FOOTER (y: 900–1000) ─────────────────────────────────
+    draw.line([(80, 905), (W-80, 905)], fill=palette["border"], width=1)
+    draw_divider_ornament(draw, W//2, 935, palette["border"])
+    center(IG_HANDLE, 965, font_brand, palette["sub"])
 
-    # Bottom motif
-    center("❧  ✦  ❧", H-140, font_deco, palette["border"])
-
-    # Instagram handle
-    center(IG_HANDLE, H-95, font_brand, palette["sub"])
-
-    # Slight vignette — darken edges for aged look
+    # ── VIGNETTE — aged paper edges ──────────────────────────
     vignette = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    vdraw = ImageDraw.Draw(vignette)
-    for i in range(60):
-        alpha = int(i * 1.2)
-        vdraw.rectangle([i, i, W-i, H-i], outline=(0, 0, 0, alpha))
+    vdraw    = ImageDraw.Draw(vignette)
+    for i in range(50):
+        vdraw.rectangle([i, i, W-i, H-i], outline=(0, 0, 0, int(i * 1.4)))
     img = img.convert("RGBA")
     img = Image.alpha_composite(img, vignette)
     img = img.convert("RGB")
