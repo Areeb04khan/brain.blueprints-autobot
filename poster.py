@@ -264,8 +264,8 @@ def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict)
     try:
         font_title = ImageFont.truetype(FONT_SERIF,  32)
         font_day   = ImageFont.truetype(FONT_ITALIC, 19)
-        font_main  = ImageFont.truetype(FONT_SERIF,  38)
-        font_trans = ImageFont.truetype(FONT_ITALIC, 17)
+        font_main  = ImageFont.truetype(FONT_SERIF,  34)
+        font_trans = ImageFont.truetype(FONT_ITALIC, 20)
         font_brand = ImageFont.truetype(FONT_SANS,   17)
     except:
         font_title = font_day = font_main = font_trans = font_brand = ImageFont.load_default()
@@ -286,43 +286,53 @@ def create_image(shayari_data: dict, poet: dict, day_number: int, palette: dict)
     center(f"Day {day_number} of 30   .   {poet['era']}", 148, font_day, palette["sub"])
     draw.line([(80, 175), (W-80, 175)], fill=palette["border"], width=1)
 
-    # ── SHAYARI (vertically centered in y: 190–680) ──────────
+    # ── SHAYARI — 40% of content area (y: 190–560) ──────────
     lines = shayari_data["shayari_roman"].strip().split("\n")
     all_wrapped = []
     for line in lines:
         wrapped = textwrap.wrap(line.strip(), width=40)
         all_wrapped.extend(wrapped if wrapped else [""])
 
-    line_h  = 52
-    zone_top, zone_bot = 190, 680
-    total_h = len(all_wrapped) * line_h
-    y_pos   = zone_top + max(0, (zone_bot - zone_top - total_h) // 2)
+    line_h   = 42
+    zone_top, zone_bot = 190, 555
+    total_h  = len(all_wrapped) * line_h
+    y_pos    = zone_top + max(0, (zone_bot - zone_top - total_h) // 2)
 
     for wline in all_wrapped:
         center(wline, y_pos, font_main, palette["text"])
         y_pos += line_h
 
-    # ── DIVIDER (y: 695) ─────────────────────────────────────
-    draw_divider_ornament(draw, W//2, 700, palette["border"])
+    # ── DIVIDER 1 (y: 560) ───────────────────────────────────
+    draw_divider_ornament(draw, W//2, 565, palette["border"])
 
-    # ── URDU SCRIPT (y: 720–800) ─────────────────────────────
-    y_pos = 722
+    # ── URDU SCRIPT — 30% of content area (y: 580–750) ──────
+    y_pos = 585
     urdu_text = shayari_data.get("shayari_urdu", "")
     if urdu_text:
-        for line in [l.strip() for l in urdu_text.strip().split("\n") if l.strip()][:2]:
+        urdu_lines = [l.strip() for l in urdu_text.strip().split("\n") if l.strip()][:4]
+        urdu_line_h = min(44, (750 - 585) // max(len(urdu_lines), 1))
+        total_urdu  = len(urdu_lines) * urdu_line_h
+        y_pos       = 585 + max(0, (165 - total_urdu) // 2)
+        for line in urdu_lines:
             bbox = draw.textbbox((0, 0), line, font=font_urdu)
             tw   = bbox[2] - bbox[0]
             draw.text(((W - tw) / 2, y_pos), line, font=font_urdu, fill=palette["sub"])
-            y_pos += 44
+            y_pos += urdu_line_h
 
-    # ── TRANSLATION (y: 810–870) ─────────────────────────────
-    y_pos = max(y_pos + 8, 810)
-    for line in textwrap.wrap(f'"{shayari_data["english_translation"]}"', width=56):
+    # ── DIVIDER 2 (y: 755) ───────────────────────────────────
+    draw_divider_ornament(draw, W//2, 758, palette["border"])
+
+    # ── TRANSLATION — 30% of content area (y: 770–900) ──────
+    trans_lines = textwrap.wrap(f'"{shayari_data["english_translation"]}"', width=52)
+    trans_line_h = 26
+    total_trans  = len(trans_lines) * trans_line_h
+    y_pos        = 770 + max(0, (130 - total_trans) // 2)
+    for line in trans_lines:
         center(line, y_pos, font_trans, palette["accent"])
-        y_pos += 28
+        y_pos += trans_line_h
 
-    # ── FOOTER (y: 900–1000) ─────────────────────────────────
-    draw.line([(80, 905), (W-80, 905)], fill=palette["border"], width=1)
+    # ── FOOTER (y: 910–1000) ─────────────────────────────────
+    draw.line([(80, 908), (W-80, 908)], fill=palette["border"], width=1)
     draw_divider_ornament(draw, W//2, 935, palette["border"])
     center(IG_HANDLE, 965, font_brand, palette["sub"])
 
