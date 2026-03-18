@@ -395,19 +395,18 @@ def generate_tts(text: str, output_path: str) -> bool:
     try:
         import asyncio
         import edge_tts
-        VOICE = random.choice(["ur-IN-SalmanNeural", "hi-IN-MadhurNeural"])
 
-        async def _speak():
-            communicate = edge_tts.Communicate(text, VOICE, rate="-15%", pitch="-5Hz")
-            await communicate.save(output_path)
+        async def _list_voices():
+            voices = await edge_tts.list_voices()
+            hindi_urdu = [v for v in voices if v["Locale"].startswith(("hi-", "ur-"))]
+            for v in hindi_urdu:
+                print(f"   {v['ShortName']} — {v['Gender']}")
 
-        asyncio.run(_speak())
-        print(f"✅ TTS: {output_path}")
-        return True
+        asyncio.run(_list_voices())
+        return False
     except Exception as e:
         print(f"❌ TTS error: {e}")
         return False
-
 
 # ============================================================
 # STEP 5: Create Reel video — Ken Burns + TTS voice + music
