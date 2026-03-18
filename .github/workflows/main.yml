@@ -33,13 +33,10 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Restore progress
-        uses: actions/cache@v4
-        with:
-          path: progress.json
-          key: progress-${{ github.run_number }}
-          restore-keys: |
-            progress-
+      - name: Configure git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
 
       - name: Determine post type
         id: post_type
@@ -61,9 +58,10 @@ jobs:
           POST_TYPE: ${{ steps.post_type.outputs.type }}
         run: python poster.py
 
-      - name: Save progress
-        uses: actions/cache/save@v4
+      - name: Save progress to repo
         if: always()
-        with:
-          path: progress.json
-          key: progress-${{ github.run_number }}
+        run: |
+          git pull origin master
+          git add progress.json
+          git diff --staged --quiet || git commit -m "Update progress [skip ci]"
+          git push
