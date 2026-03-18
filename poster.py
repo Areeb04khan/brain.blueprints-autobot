@@ -396,13 +396,26 @@ def generate_tts(text: str, output_path: str) -> bool:
         import asyncio
         import edge_tts
 
-        async def _list_voices():
+        async def _speak():
+            # Fetch all available voices
             voices = await edge_tts.list_voices()
-            hindi_urdu = [v for v in voices if v["Locale"].startswith(("hi-", "ur-"))]
-            for v in hindi_urdu:
-                print(f"   {v['ShortName']} — {v['Gender']}")
+            # Filter for Hindi and Urdu only
+            filtered = [v for v in voices if v["Locale"].startswith(("hi-", "ur-"))]
+            if not filtered:
+                print("❌ No Hindi/Urdu voices found")
+                return False
+            # Pick randomly
+            chosen = random.choice(filtered)
+            voice_name = chosen["ShortName"]
+            print(f"🎤 Voice: {voice_name} ({chosen['Gender']})")
+            communicate = edge_tts.Communicate(text, voice_name, rate="-15%", pitch="-5Hz")
+            await communicate.save(output_path)
+            return True
 
-        asyncio.run(_list_voices())
+        result = asyncio.run(_speak())
+        if result:
+            print(f"✅ TTS: {output_path}")
+            return True
         return False
     except Exception as e:
         print(f"❌ TTS error: {e}")
