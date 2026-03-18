@@ -51,6 +51,14 @@ POET_SCHEDULE = [
     {"name": "Habib Jalib",     "era": "1928-1993"},
     {"name": "Josh Malihabadi", "era": "1898-1982"},
     {"name": "Wasi Shah",       "era": "1977-"    },
+    {"name": "Javed Akhtar",    "era": "1945-"    },
+    {"name": "Kumar Vishwas",   "era": "1970-"    },
+    {"name": "Munawwar Rana",   "era": "1952-2024"},
+    {"name": "Bashir Badr",     "era": "1935-"    },
+    {"name": "Nida Fazli",      "era": "1938-2016"},
+    {"name": "Anwar Masood",    "era": "1935-"    },
+    {"name": "Amjad Islam Amjad","era": "1944-"   },
+    {"name": "Zehra Nigah",     "era": "1936-"    },
 ]
 
 # ============================================================
@@ -102,6 +110,14 @@ POET_HASHTAGS = {
     "Habib Jalib":     ["habibjalib","jalib","jalibshayari"],
     "Wasi Shah":       ["wasishah","wasi","modernurdu"],
     "Josh Malihabadi": ["joshmalihabadi","josh","joshpoetry"],
+    "Javed Akhtar":    ["javedakhtar","javed","javedakhtar"],
+    "Kumar Vishwas":   ["kumarvishwas","kumar","vishwasshayari"],
+    "Munawwar Rana":   ["munawwarrana","rana","munawwarshayari"],
+    "Bashir Badr":     ["bashirbadr","badr","bashirbadrsher"],
+    "Nida Fazli":      ["nidafazli","fazli","nidafazlisher"],
+    "Anwar Masood":    ["anwarmasood","masood","anwarmasoodshayari"],
+    "Amjad Islam Amjad":["amjadislamamjad","amjad","amjadshayari"],
+    "Zehra Nigah":     ["zehranigah","nigah","zehranigahpoetry"],
 }
 
 TAG_TRIGGERS = [
@@ -150,6 +166,7 @@ Line 5 - TAG TRIGGER (copy exactly): "{tag_trigger}"
 Return ONLY valid JSON, no markdown:
 {{
   "sher_roman": "...",
+  "sher_urdu": "...",
   "english_translation": "...",
   "source": "...",
   "emotion": "...",
@@ -395,31 +412,19 @@ def generate_tts(text: str, output_path: str) -> bool:
     try:
         import asyncio
         import edge_tts
+        VOICE = "ur-PK-AsadNeural"
 
         async def _speak():
-            # Fetch all available voices
-            voices = await edge_tts.list_voices()
-            # Filter for Hindi and Urdu only
-            filtered = [v for v in voices if v["Locale"].startswith(("hi-", "ur-"))]
-            if not filtered:
-                print("❌ No Hindi/Urdu voices found")
-                return False
-            # Pick randomly
-            chosen = random.choice(filtered)
-            voice_name = chosen["ShortName"]
-            print(f"🎤 Voice: {voice_name} ({chosen['Gender']})")
-            communicate = edge_tts.Communicate(text, voice_name, rate="-15%", pitch="-5Hz")
+            communicate = edge_tts.Communicate(text, VOICE, rate="-15%", pitch="-5Hz")
             await communicate.save(output_path)
-            return True
 
-        result = asyncio.run(_speak())
-        if result:
-            print(f"✅ TTS: {output_path}")
-            return True
-        return False
+        asyncio.run(_speak())
+        print(f"✅ TTS: {output_path}")
+        return True
     except Exception as e:
         print(f"❌ TTS error: {e}")
         return False
+
 
 # ============================================================
 # STEP 5: Create Reel video — Ken Burns + TTS voice + music
@@ -602,11 +607,12 @@ def post_photo(image_url: str, caption: str) -> bool:
 # STEP 9: Build caption
 # ============================================================
 def build_caption(data: dict, poet: dict) -> str:
-    poet_tags  = POET_HASHTAGS.get(poet["name"],[])
-    extra_tags = data.get("extra_hashtags",[])
-    all_tags   = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
-    hashtags   = " ".join([f"#{t}" for t in all_tags[:9]])
-    return f"{data['caption']}\n\n{hashtags}"
+    poet_tags   = POET_HASHTAGS.get(poet["name"],[])
+    extra_tags  = data.get("extra_hashtags",[])
+    all_tags    = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
+    hashtags    = " ".join([f"#{t}" for t in all_tags[:9]])
+    disclaimer  = "⚠️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
+    return f"{data['caption']}\n\n{hashtags}\n\n{disclaimer}"
 
 
 # ============================================================
@@ -651,7 +657,7 @@ def run():
         print("Creating 16:9 reel image...")
         reel_image = create_reel_image(data, poet, day)
 
-        tts_text = data['sher_roman']
+        tts_text   = data.get("sher_urdu", data["sher_roman"])
         audio_path = reel_image.replace(".jpg",".mp3")
 
         print("Generating TTS voiceover...")

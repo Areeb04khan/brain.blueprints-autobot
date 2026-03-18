@@ -46,7 +46,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "type=${{ github.event.inputs.post_type }}" >> $GITHUB_OUTPUT
-          elif [ "$(date -u +%H)" = "02" ]; then
+          elif [ "$(date -u +%H)" -le "04" ]; then
             echo "type=photo" >> $GITHUB_OUTPUT
           else
             echo "type=reel" >> $GITHUB_OUTPUT
