@@ -395,7 +395,7 @@ def generate_tts(text: str, output_path: str) -> bool:
     try:
         import asyncio
         import edge_tts
-        VOICE = "hi-IN-FarhanNeural"
+        VOICE = random.choice(["ur-IN-SalmanNeural", "hi-IN-MadhurNeural"])
 
         async def _speak():
             communicate = edge_tts.Communicate(text, VOICE, rate="-15%", pitch="-5Hz")
