@@ -395,7 +395,7 @@ def generate_tts(text: str, output_path: str) -> bool:
     try:
         import asyncio
         import edge_tts
-        VOICE = "ur-PK-AsadNeural"
+        VOICE = "hi-IN-FarhanNeural"
 
         async def _speak():
             communicate = edge_tts.Communicate(text, VOICE, rate="-15%", pitch="-5Hz")
@@ -639,7 +639,7 @@ def run():
         print("Creating 16:9 reel image...")
         reel_image = create_reel_image(data, poet, day)
 
-        tts_text   = f"{data['sher_roman']}\n\n{data['english_translation']}"
+        tts_text = data['sher_roman']
         audio_path = reel_image.replace(".jpg",".mp3")
 
         print("Generating TTS voiceover...")
