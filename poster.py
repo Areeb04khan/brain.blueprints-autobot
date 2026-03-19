@@ -20,6 +20,18 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import base64
 
+#retries for transient errors (e.g. rate limits, timeouts)
+MAX_RETRIES = 3
+RETRY_DELAY = 3600  # 1 hour
+
+
+def is_retryable_error(e):
+    msg = str(e).lower()
+    return any(k in msg for k in [
+        "503", "unavailable", "timeout", "connection",
+        "temporarily", "rate limit", "internal error",
+        "catbox", "upload failed"
+    ])
 # ============================================================
 # CONFIGURATION
 # ============================================================
@@ -620,12 +632,36 @@ def build_caption(data: dict, poet: dict) -> str:
 # ============================================================
 def load_progress():
     if os.path.exists("progress.json"):
-        with open("progress.json") as f: return json.load(f)
-    return {"poet_index":0,"day":1,"total_posts":0}
+        with open("progress.json") as f:
+            data = json.load(f)
+    else:
+        data = {"poet_index":0,"day":1,"total_posts":0}
 
-def save_progress(p):
-    with open("progress.json","w") as f: json.dump(p,f,indent=2)
+    # ensure new keys exist
+    data.setdefault("last_post_date", "")
+    data.setdefault("last_post_type", "")
+    data.setdefault("status", "")
 
+    return data
+
+
+def mark_post_success(post_type):
+    p = load_progress()
+    p["last_post_date"] = datetime.utcnow().strftime("%Y-%m-%d")
+    p["last_post_type"] = post_type
+    p["status"] = "success"
+    save_progress(p)
+
+
+def already_posted_today(post_type):
+    p = load_progress()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+    return (
+        p.get("last_post_date") == today and
+        p.get("last_post_type") == post_type and
+        p.get("status") == "success"
+    )
 
 # ============================================================
 # MAIN
@@ -701,5 +737,37 @@ def run():
         print("Failed.")
         sys.exit(1)
 
+def main():
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            print(f"\n==============================")
+            print(f"Attempt {attempt}/{MAX_RETRIES}")
+            print(f"==============================\n")
+
+            # Prevent duplicate posts
+            if already_posted_today(POST_TYPE):
+                print("⚠️ Already posted today. Skipping.")
+                return
+
+            run()
+
+            # mark success ONLY after full success
+            mark_post_success(POST_TYPE)
+
+            print("✅ Completed successfully")
+            return
+
+        except Exception as e:
+            print(f"❌ Attempt {attempt} failed")
+            print(f"Error: {e}")
+
+            if attempt < MAX_RETRIES and is_retryable_error(e):
+                print(f"⏳ Retrying in {RETRY_DELAY//60} minutes...")
+                time.sleep(RETRY_DELAY)
+            else:
+                print("🚫 Max retries reached or non-retryable error")
+                sys.exit(1)
+
+
 if __name__ == "__main__":
-    run()
+    main()
