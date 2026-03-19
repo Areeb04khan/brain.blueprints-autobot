@@ -637,12 +637,16 @@ def load_progress():
     else:
         data = {"poet_index":0,"day":1,"total_posts":0}
 
-    # ensure new keys exist
     data.setdefault("last_post_date", "")
     data.setdefault("last_post_type", "")
     data.setdefault("status", "")
 
     return data
+
+
+def save_progress(p):
+    with open("progress.json","w") as f:
+        json.dump(p,f,indent=2)
 
 
 def mark_post_success(post_type):
@@ -662,7 +666,6 @@ def already_posted_today(post_type):
         p.get("last_post_type") == post_type and
         p.get("status") == "success"
     )
-
 # ============================================================
 # MAIN
 # ============================================================
