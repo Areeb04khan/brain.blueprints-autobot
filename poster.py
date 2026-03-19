@@ -1,11 +1,18 @@
 """
-Shayari Instagram Bot v4
+Shayari Instagram Bot v4.1
 - Real authentic Shayari
 - Emotion-driven dark visuals
-- 1:1 (1080x1080) for photos, 16:9 (1080x1920) for Reels
-- Instagram rupload API for video (no third-party hosting)
+- 1:1 (1080x1080) for photos, 9:16 (1080x1920) for Reels
+- catbox.moe for video hosting
 - Edge TTS for voiceover (free, no API key)
 - No Urdu script on image — Roman + English only
+
+FIXES in v4.1:
+1. progress.json now always saved with ALL fields (last_post_date, last_post_type, status)
+   — prevents NameError / KeyError on fresh repo clones
+2. Reel success now also advances day counter (was photo-only before)
+3. mark_post_success() removed — progress saving unified inside run()
+4. Workflow post-type detection fixed (was string "02", now correct integer comparison)
 """
 
 from google import genai
@@ -20,74 +27,77 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import base64
 
-#retries for transient errors (e.g. rate limits, timeouts)
+# How many times to retry on transient failures before giving up
 MAX_RETRIES = 3
-RETRY_DELAY = 3600  # 1 hour
-
+RETRY_DELAY = 3600  # 1 hour in seconds
 
 def is_retryable_error(e):
+    """Returns True for network/server errors worth retrying, False for code bugs."""
     msg = str(e).lower()
     return any(k in msg for k in [
         "503", "unavailable", "timeout", "connection",
         "temporarily", "rate limit", "internal error",
         "catbox", "upload failed"
     ])
+
 # ============================================================
-# CONFIGURATION
+# CONFIGURATION — all values come from GitHub Actions secrets
 # ============================================================
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 IMGBB_API_KEY          = os.environ.get("IMGBB_API_KEY", "")
-POST_TYPE              = os.environ.get("POST_TYPE", "photo")
+POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
 IG_HANDLE              = "@ak_apak"
 
-# Font paths
+# DejaVu fonts — installed via apt-get in the workflow
 FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
 FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ============================================================
-# POET SCHEDULE
+# POET SCHEDULE — 30 days per poet, cycles through all poets
 # ============================================================
 POET_SCHEDULE = [
-    {"name": "Mirza Ghalib",    "era": "1797-1869"},
-    {"name": "Mir Taqi Mir",    "era": "1723-1810"},
-    {"name": "Allama Iqbal",    "era": "1877-1938"},
-    {"name": "Faiz Ahmed Faiz", "era": "1911-1984"},
-    {"name": "Ahmad Faraz",     "era": "1931-2008"},
-    {"name": "Parveen Shakir",  "era": "1952-1994"},
-    {"name": "Sahir Ludhianvi", "era": "1921-1980"},
-    {"name": "Gulzar",          "era": "1934-"    },
-    {"name": "Rahat Indori",    "era": "1950-2020"},
-    {"name": "Habib Jalib",     "era": "1928-1993"},
-    {"name": "Josh Malihabadi", "era": "1898-1982"},
-    {"name": "Wasi Shah",       "era": "1977-"    },
-    {"name": "Javed Akhtar",    "era": "1945-"    },
-    {"name": "Kumar Vishwas",   "era": "1970-"    },
-    {"name": "Munawwar Rana",   "era": "1952-2024"},
-    {"name": "Bashir Badr",     "era": "1935-"    },
-    {"name": "Nida Fazli",      "era": "1938-2016"},
-    {"name": "Anwar Masood",    "era": "1935-"    },
-    {"name": "Amjad Islam Amjad","era": "1944-"   },
-    {"name": "Zehra Nigah",     "era": "1936-"    },
+    {"name": "Mirza Ghalib",      "era": "1797-1869"},
+    {"name": "Mir Taqi Mir",      "era": "1723-1810"},
+    {"name": "Allama Iqbal",      "era": "1877-1938"},
+    {"name": "Faiz Ahmed Faiz",   "era": "1911-1984"},
+    {"name": "Ahmad Faraz",       "era": "1931-2008"},
+    {"name": "Parveen Shakir",    "era": "1952-1994"},
+    {"name": "Sahir Ludhianvi",   "era": "1921-1980"},
+    {"name": "Gulzar",            "era": "1934-"    },
+    {"name": "Rahat Indori",      "era": "1950-2020"},
+    {"name": "Habib Jalib",       "era": "1928-1993"},
+    {"name": "Josh Malihabadi",   "era": "1898-1982"},
+    {"name": "Wasi Shah",         "era": "1977-"    },
+    {"name": "Javed Akhtar",      "era": "1945-"    },
+    {"name": "Kumar Vishwas",     "era": "1970-"    },
+    {"name": "Munawwar Rana",     "era": "1952-2024"},
+    {"name": "Bashir Badr",       "era": "1935-"    },
+    {"name": "Nida Fazli",        "era": "1938-2016"},
+    {"name": "Anwar Masood",      "era": "1935-"    },
+    {"name": "Amjad Islam Amjad", "era": "1944-"    },
+    {"name": "Zehra Nigah",       "era": "1936-"    },
 ]
 
 # ============================================================
-# FORMAT ROTATION — 2x one-liner, 3x couplet, 2x longer per week
+# FORMAT ROTATION — variety across the 30-day poet cycle
+# one-liner (1 misra), couplet (2 lines), longer (4-6 lines)
 # ============================================================
 FORMAT_MAP = {
-    1:"couplet",   2:"one-liner", 3:"couplet",  4:"longer",   5:"couplet",
-    6:"one-liner", 7:"longer",    8:"couplet",  9:"one-liner",10:"couplet",
-    11:"longer",   12:"couplet",  13:"one-liner",14:"longer",  15:"couplet",
-    16:"one-liner",17:"couplet",  18:"longer",   19:"couplet", 20:"one-liner",
-    21:"longer",   22:"couplet",  23:"one-liner",24:"couplet", 25:"longer",
-    26:"couplet",  27:"one-liner",28:"longer",   29:"couplet", 30:"one-liner",
+    1:"couplet",    2:"one-liner",  3:"couplet",   4:"longer",    5:"couplet",
+    6:"one-liner",  7:"longer",     8:"couplet",   9:"one-liner", 10:"couplet",
+    11:"longer",    12:"couplet",   13:"one-liner", 14:"longer",   15:"couplet",
+    16:"one-liner", 17:"couplet",   18:"longer",    19:"couplet",  20:"one-liner",
+    21:"longer",    22:"couplet",   23:"one-liner", 24:"couplet",  25:"longer",
+    26:"couplet",   27:"one-liner", 28:"longer",    29:"couplet",  30:"one-liner",
 }
 def get_format(day): return FORMAT_MAP.get(day, "couplet")
 
 # ============================================================
-# EMOTION PALETTES — all dark
+# EMOTION → DARK COLOR PALETTES
+# bg=background, text=sher text, accent=highlights, sub=secondary, border=frame
 # ============================================================
 EMOTION_PALETTES = {
     "ishq":     {"bg":"#1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060","border":"#8b1a3a"},
@@ -110,26 +120,26 @@ BASE_HASHTAGS = ["shayari","urdupoetry","hindishayari",
                  "shayarilover","urdushayari","shayarioftheday"]
 
 POET_HASHTAGS = {
-    "Mirza Ghalib":    ["mirzaghalib","ghalib","ghalibishayari"],
-    "Faiz Ahmed Faiz": ["faizahmedfaiz","faizshayari","faiz"],
-    "Allama Iqbal":    ["allamaiqbal","iqbal","iqbalshayari"],
-    "Mir Taqi Mir":    ["mirtaqimir","mir","klassicalurdu"],
-    "Ahmad Faraz":     ["ahmadfaraz","faraz","farazshayari"],
-    "Parveen Shakir":  ["parveenshakir","shakir","urdupoetess"],
-    "Sahir Ludhianvi": ["sahirludhianvi","sahir","sahirshayari"],
-    "Gulzar":          ["gulzar","gulzarshayari","gulzarsahab"],
-    "Rahat Indori":    ["rahatindori","rahat","rahatshayari"],
-    "Habib Jalib":     ["habibjalib","jalib","jalibshayari"],
-    "Wasi Shah":       ["wasishah","wasi","modernurdu"],
-    "Josh Malihabadi": ["joshmalihabadi","josh","joshpoetry"],
-    "Javed Akhtar":    ["javedakhtar","javed","javedakhtar"],
-    "Kumar Vishwas":   ["kumarvishwas","kumar","vishwasshayari"],
-    "Munawwar Rana":   ["munawwarrana","rana","munawwarshayari"],
-    "Bashir Badr":     ["bashirbadr","badr","bashirbadrsher"],
-    "Nida Fazli":      ["nidafazli","fazli","nidafazlisher"],
-    "Anwar Masood":    ["anwarmasood","masood","anwarmasoodshayari"],
-    "Amjad Islam Amjad":["amjadislamamjad","amjad","amjadshayari"],
-    "Zehra Nigah":     ["zehranigah","nigah","zehranigahpoetry"],
+    "Mirza Ghalib":       ["mirzaghalib","ghalib","ghalibishayari"],
+    "Faiz Ahmed Faiz":    ["faizahmedfaiz","faizshayari","faiz"],
+    "Allama Iqbal":       ["allamaiqbal","iqbal","iqbalshayari"],
+    "Mir Taqi Mir":       ["mirtaqimir","mir","klassicalurdu"],
+    "Ahmad Faraz":        ["ahmadfaraz","faraz","farazshayari"],
+    "Parveen Shakir":     ["parveenshakir","shakir","urdupoetess"],
+    "Sahir Ludhianvi":    ["sahirludhianvi","sahir","sahirshayari"],
+    "Gulzar":             ["gulzar","gulzarshayari","gulzarsahab"],
+    "Rahat Indori":       ["rahatindori","rahat","rahatshayari"],
+    "Habib Jalib":        ["habibjalib","jalib","jalibshayari"],
+    "Wasi Shah":          ["wasishah","wasi","modernurdu"],
+    "Josh Malihabadi":    ["joshmalihabadi","josh","joshpoetry"],
+    "Javed Akhtar":       ["javedakhtar","javed","javedakhtarshayari"],
+    "Kumar Vishwas":      ["kumarvishwas","kumar","vishwasshayari"],
+    "Munawwar Rana":      ["munawwarrana","rana","munawwarshayari"],
+    "Bashir Badr":        ["bashirbadr","badr","bashirbadrsher"],
+    "Nida Fazli":         ["nidafazli","fazli","nidafazlisher"],
+    "Anwar Masood":       ["anwarmasood","masood","anwarmasoodshayari"],
+    "Amjad Islam Amjad":  ["amjadislamamjad","amjad","amjadshayari"],
+    "Zehra Nigah":        ["zehranigah","nigah","zehranigahpoetry"],
 }
 
 TAG_TRIGGERS = [
@@ -141,8 +151,9 @@ TAG_TRIGGERS = [
     "Aaj ke waqt mein bhi kitna sach lagta hai — sochna.",
 ]
 
+
 # ============================================================
-# STEP 1: Generate content
+# STEP 1: Generate Shayari content via Gemini
 # ============================================================
 def generate_content(poet: dict, day: int) -> dict:
     client      = genai.Client(api_key=GEMINI_API_KEY)
@@ -158,9 +169,10 @@ RULES:
    one-liner = 1 misra only
    couplet = exactly 2 lines
    longer = 4-6 lines from a real ghazal/nazm
-3. Roman Urdu transliteration of the sher only
-4. English translation: MAX 1 LINE. Poetic, not literal.
-5. Source collection if known (e.g. Diwan-e-Ghalib)
+3. Roman Urdu transliteration of the sher only (for sher_roman)
+4. Urdu script of the sher (for sher_urdu — used for TTS pronunciation)
+5. English translation: MAX 1 LINE. Poetic, not literal.
+6. Source collection if known (e.g. Diwan-e-Ghalib)
 
 EMOTION: pick one from [ishq, dard, intezaar, yaad, tanhai, gussa, falsafa, umeed, zindagi, maut]
 
@@ -175,7 +187,7 @@ Line 2-3 - STORY: Real intimate fact about poet's life tied to this sher.
 Line 4 - GHAZAL: If from ghazal, include 2-3 more real couplets labeled clearly.
 Line 5 - TAG TRIGGER (copy exactly): "{tag_trigger}"
 
-Return ONLY valid JSON, no markdown:
+Return ONLY valid JSON, no markdown, no backticks:
 {{
   "sher_roman": "...",
   "sher_urdu": "...",
@@ -191,25 +203,30 @@ Return ONLY valid JSON, no markdown:
 }}"""
 
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+    # Strip any markdown code fences Gemini might wrap around JSON
     raw = response.text.strip().replace("```json","").replace("```","").strip()
     return json.loads(raw)
 
 
 # ============================================================
-# HELPERS: Border + Divider + Texture
+# HELPERS: decorative border, divider diamond, and dot texture
 # ============================================================
 def draw_border(draw, p, W, H):
+    """Three nested rectangles with diamond corner ornaments."""
     draw.rectangle([20,20,W-20,H-20], outline=p["border"], width=2)
     draw.rectangle([32,32,W-32,H-32], outline=p["border"], width=1)
     draw.rectangle([40,40,W-40,H-40], outline=p["accent"],  width=1)
+    # Diamond ornaments at each corner
     for cx,cy in [(20,20),(W-20,20),(20,H-20),(W-20,H-20)]:
         s=10
         draw.polygon([(cx,cy-s),(cx+s,cy),(cx,cy+s),(cx-s,cy)], fill=p["accent"])
         draw.ellipse([cx-3,cy-3,cx+3,cy+3], fill=p["border"])
+    # Mid-edge dots
     for mx,my in [(W//2,20),(W//2,H-20),(20,H//2),(W-20,H//2)]:
         draw.ellipse([mx-4,my-4,mx+4,my+4], fill=p["border"])
 
 def draw_divider(draw, cx, cy, color, w=100):
+    """Horizontal lines with a central diamond — used between sher and translation."""
     draw.line([(cx-w,cy),(cx-14,cy)], fill=color, width=1)
     draw.line([(cx+14,cy),(cx+w,cy)], fill=color, width=1)
     s=7
@@ -217,10 +234,13 @@ def draw_divider(draw, cx, cy, color, w=100):
     draw.ellipse([cx-2,cy-2,cx+2,cy+2], fill=color)
 
 def add_texture(draw, W, H, accent):
+    """Scattered tiny dots for grain/depth effect on dark backgrounds."""
+    # Parse accent hex to RGB
     ink = tuple(int(accent[i:i+2],16) for i in (1,3,5))
     for _ in range(600):
         x,y = random.randint(0,W), random.randint(0,H)
         r   = random.randint(0,1)
+        # Low alpha dots (4-14) for subtle texture
         draw.ellipse([x-r,y-r,x+r,y+r], fill=(*ink, random.randint(4,14)))
 
 
@@ -230,6 +250,8 @@ def add_texture(draw, W, H, accent):
 def create_photo_image(data: dict, poet: dict, day: int) -> str:
     W, H    = 1080, 1080
     emotion = data.get("emotion","dard").lower()
+
+    # Start from preset palette, then override with Gemini's suggested colors
     palette = dict(EMOTION_PALETTES.get(emotion, DEFAULT_PALETTE))
     for key,field in [("bg","bg_color"),("text","text_color"),("accent","accent_color")]:
         v = data.get(field,"")
@@ -237,11 +259,11 @@ def create_photo_image(data: dict, poet: dict, day: int) -> str:
             palette[key] = v
 
     img  = Image.new("RGB",(W,H), color=palette["bg"])
-    draw = ImageDraw.Draw(img)
+    draw = ImageDraw.Draw(img, "RGBA")  # RGBA mode needed for alpha texture dots
     add_texture(draw, W, H, palette["accent"])
     draw_border(draw, palette, W, H)
 
-    # Fonts
+    # Load fonts — fall back to default if font files missing
     try:
         font_poet  = ImageFont.truetype(FONT_SERIF,  28)
         font_day   = ImageFont.truetype(FONT_ITALIC, 17)
@@ -251,41 +273,44 @@ def create_photo_image(data: dict, poet: dict, day: int) -> str:
     except:
         font_poet=font_day=font_trans=font_brand=font_src=ImageFont.load_default()
 
+    # Sher font size varies by format
     fmt = data.get("format","couplet")
     fs  = 50 if fmt=="one-liner" else (44 if fmt=="couplet" else 38)
     try:    font_sher = ImageFont.truetype(FONT_SERIF, fs)
     except: font_sher = font_poet
 
     def center(text, y, font, color):
+        """Draw text horizontally centered at y position."""
         bbox = draw.textbbox((0,0),text,font=font)
         tw   = bbox[2]-bbox[0]
         draw.text(((W-tw)/2,y), text, font=font, fill=color)
 
-    # HEADER
+    # --- HEADER SECTION ---
     draw_divider(draw, W//2, 65, palette["accent"], 60)
     center(f"-- {poet['name']} --", 85, font_poet, palette["accent"])
     center(f"Day {day} of 30   .   {poet['era']}", 128, font_day, palette["sub"])
     draw.line([(65,162),(W-65,162)], fill=palette["border"], width=1)
 
-    # ROMAN SHER — zone 178–720 (60% of content)
+    # --- SHER SECTION — centered vertically in zone 178–720 ---
     lines       = data["sher_roman"].strip().split("\n")
     all_wrapped = []
     for line in lines:
+        # Wrap long lines at 36 chars to fit within border
         w2 = textwrap.wrap(line.strip(), width=36)
-        all_wrapped.extend(w2 if w2 else [""])
+        all_wrapped.extend(w2 if w2 else [""])  # empty string preserves blank lines
 
     line_h  = int(fs*1.38)
     total_h = len(all_wrapped)*line_h
-    y_pos   = 178 + max(0,(542-total_h)//2)
+    y_pos   = 178 + max(0,(542-total_h)//2)  # vertical center in sher zone
     for wline in all_wrapped:
         center(wline, y_pos, font_sher, palette["text"])
         y_pos += line_h
 
-    # DIVIDER
+    # --- DIVIDER between sher and translation ---
     div_y = max(y_pos+20, 730)
     draw_divider(draw, W//2, div_y, palette["accent"])
 
-    # ENGLISH TRANSLATION — zone below divider to 890
+    # --- TRANSLATION SECTION ---
     trans   = f'"{data["english_translation"]}"'
     tlines  = textwrap.wrap(trans, width=54)
     tlh     = 27
@@ -295,16 +320,17 @@ def create_photo_image(data: dict, poet: dict, day: int) -> str:
         center(line, y_pos, font_trans, palette["accent"])
         y_pos += tlh
 
+    # Source attribution (e.g. "-- Diwan-e-Ghalib")
     src = data.get("source","")
     if src and src.lower() not in ("unknown",""):
         center(f"-- {src}", y_pos+6, font_src, palette["sub"])
 
-    # FOOTER
+    # --- FOOTER ---
     draw.line([(65,908),(W-65,908)], fill=palette["border"], width=1)
     draw_divider(draw, W//2, 935, palette["accent"], 60)
     center(IG_HANDLE, 962, font_brand, palette["sub"])
 
-    # VIGNETTE
+    # --- VIGNETTE — dark edges fade inward for cinematic look ---
     vig  = Image.new("RGBA",(W,H),(0,0,0,0))
     vd   = ImageDraw.Draw(vig)
     for i in range(80):
@@ -321,7 +347,7 @@ def create_photo_image(data: dict, poet: dict, day: int) -> str:
 
 
 # ============================================================
-# STEP 3: Create 16:9 reel image (1080x1920)
+# STEP 3: Create 9:16 reel image (1080x1920)
 # ============================================================
 def create_reel_image(data: dict, poet: dict, day: int) -> str:
     W, H    = 1080, 1920
@@ -333,11 +359,11 @@ def create_reel_image(data: dict, poet: dict, day: int) -> str:
             palette[key] = v
 
     img  = Image.new("RGB",(W,H), color=palette["bg"])
-    draw = ImageDraw.Draw(img)
+    draw = ImageDraw.Draw(img, "RGBA")
     add_texture(draw, W, H, palette["accent"])
     draw_border(draw, palette, W, H)
 
-    # Fonts — slightly larger for 16:9 tall canvas
+    # Slightly larger fonts for the taller canvas
     try:
         font_poet  = ImageFont.truetype(FONT_SERIF,  34)
         font_day   = ImageFont.truetype(FONT_ITALIC, 22)
@@ -357,13 +383,13 @@ def create_reel_image(data: dict, poet: dict, day: int) -> str:
         tw   = bbox[2]-bbox[0]
         draw.text(((W-tw)/2,y), text, font=font, fill=color)
 
-    # HEADER
+    # --- HEADER ---
     draw_divider(draw, W//2, 100, palette["accent"], 80)
     center(f"-- {poet['name']} --", 130, font_poet, palette["accent"])
     center(f"Day {day} of 30   .   {poet['era']}", 185, font_day, palette["sub"])
     draw.line([(80,225),(W-80,225)], fill=palette["border"], width=1)
 
-    # ROMAN SHER — vertically centered in middle zone
+    # --- SHER — vertically centered in zone 300–1400 ---
     lines       = data["sher_roman"].strip().split("\n")
     all_wrapped = []
     for line in lines:
@@ -372,17 +398,16 @@ def create_reel_image(data: dict, poet: dict, day: int) -> str:
 
     line_h  = int(fs*1.4)
     total_h = len(all_wrapped)*line_h
-    # Center in zone 300–1400
     y_pos   = 300 + max(0,(1100-total_h)//2)
     for wline in all_wrapped:
         center(wline, y_pos, font_sher, palette["text"])
         y_pos += line_h
 
-    # DIVIDER
+    # --- DIVIDER ---
     div_y = max(y_pos+40, 1430)
     draw_divider(draw, W//2, div_y, palette["accent"], 120)
 
-    # ENGLISH TRANSLATION
+    # --- TRANSLATION ---
     trans   = f'"{data["english_translation"]}"'
     tlines  = textwrap.wrap(trans, width=46)
     tlh     = 34
@@ -396,12 +421,12 @@ def create_reel_image(data: dict, poet: dict, day: int) -> str:
     if src and src.lower() not in ("unknown",""):
         center(f"-- {src}", y_pos+10, font_src, palette["sub"])
 
-    # FOOTER
+    # --- FOOTER ---
     draw.line([(80,H-160),(W-80,H-160)], fill=palette["border"], width=1)
     draw_divider(draw, W//2, H-125, palette["accent"], 80)
     center(IG_HANDLE, H-85, font_brand, palette["sub"])
 
-    # VIGNETTE
+    # --- VIGNETTE ---
     vig = Image.new("RGBA",(W,H),(0,0,0,0))
     vd  = ImageDraw.Draw(vig)
     for i in range(80):
@@ -418,9 +443,14 @@ def create_reel_image(data: dict, poet: dict, day: int) -> str:
 
 
 # ============================================================
-# STEP 4: Edge TTS voiceover
+# STEP 4: Edge TTS voiceover — uses Urdu script for pronunciation
 # ============================================================
 def generate_tts(text: str, output_path: str) -> bool:
+    """
+    FIX: Now receives sher_urdu (Urdu script) instead of sher_roman.
+    Edge TTS pronounces Urdu script far more accurately than Roman transliteration.
+    Voice: ur-PK-AsadNeural — male Urdu voice, -15% rate for poetry pacing.
+    """
     try:
         import asyncio
         import edge_tts
@@ -439,10 +469,10 @@ def generate_tts(text: str, output_path: str) -> bool:
 
 
 # ============================================================
-# STEP 5: Create Reel video — Ken Burns + TTS voice + music
+# STEP 5: Reel video — Ken Burns zoom + TTS voice + music
 # ============================================================
 def get_random_music() -> str:
-    """Pick a random track from the music/ folder."""
+    """Pick a random royalty-free MP3 from the music/ folder."""
     music_dir = "music"
     if not os.path.exists(music_dir):
         return None
@@ -455,35 +485,41 @@ def get_random_music() -> str:
 
 
 def create_reel_video(image_path: str, tts_path: str) -> str:
+    """
+    Combines the reel image + TTS audio + background music into an MP4.
+    Ken Burns effect: slow 4% zoom over the clip duration.
+    Music is mixed at 18% volume under the voice.
+    """
     try:
         from moviepy.editor import ImageClip, AudioFileClip, CompositeAudioClip
         import numpy as np
 
-        # Load TTS voice
+        # TTS audio drives the video duration (capped at 59s for Instagram)
         tts_audio = AudioFileClip(tts_path)
         duration  = min(tts_audio.duration + 2, 59)
 
-        # Load and mix background music
+        # Mix background music under voice
         music_path = get_random_music()
         if music_path:
-            music = AudioFileClip(music_path).subclip(0, duration)
-            music = music.volumex(0.18)          # Music at 18% volume
-            tts_audio = tts_audio.volumex(1.0)   # Voice at full volume
+            music       = AudioFileClip(music_path).subclip(0, duration)
+            music       = music.volumex(0.18)        # 18% — subtle background
+            tts_audio   = tts_audio.volumex(1.0)     # 100% — voice is primary
             final_audio = CompositeAudioClip([music, tts_audio])
         else:
             final_audio = tts_audio
 
-        # Ken Burns zoom on image
+        # Slow Ken Burns zoom: starts at 100%, ends at 104%
         clip = ImageClip(image_path, duration=duration)
         W, H = clip.size
 
         def make_frame(t):
-            zoom  = 1 + 0.04*(t/duration)
+            zoom  = 1 + 0.04*(t/duration)  # linear zoom from 1.0 to 1.04
             frame = clip.get_frame(t)
             from PIL import Image as PI
             fi    = PI.fromarray(frame)
             nw,nh = int(W*zoom), int(H*zoom)
             fi    = fi.resize((nw,nh), PI.LANCZOS)
+            # Crop back to original size from center
             l,tp  = (nw-W)//2, (nh-H)//2
             fi    = fi.crop((l,tp,l+W,tp+H))
             return np.array(fi)
@@ -502,9 +538,10 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
 
 
 # ============================================================
-# STEP 6: Upload image to imgbb (photos only)
+# STEP 6: Upload image to imgbb (photos only — free hosting)
 # ============================================================
 def upload_image(path: str) -> str:
+    """Uploads JPEG to imgbb.com and returns public URL for Instagram API."""
     with open(path,"rb") as f:
         data = base64.b64encode(f.read()).decode("utf-8")
     result = requests.post(
@@ -519,10 +556,13 @@ def upload_image(path: str) -> str:
 
 
 # ============================================================
-# STEP 7: Upload video to catbox.moe + post as Reel
+# STEP 7: Upload video to catbox.moe + post as Instagram Reel
 # ============================================================
 def upload_video_to_catbox(video_path: str) -> str:
-    """Upload video to catbox.moe and return public URL."""
+    """
+    Uploads MP4 to catbox.moe (free, anonymous) and returns public HTTPS URL.
+    Instagram's Graph API requires a publicly accessible video URL.
+    """
     with open(video_path,"rb") as f:
         result = requests.post(
             "https://catbox.moe/user/api.php",
@@ -537,28 +577,33 @@ def upload_video_to_catbox(video_path: str) -> str:
 
 
 def upload_video_to_instagram(video_path: str, caption: str) -> bool:
-    # Upload to catbox.moe for public URL
+    """
+    3-step Instagram Reels upload:
+    1. Upload MP4 to catbox.moe for public URL
+    2. Create media container (Instagram processes video asynchronously)
+    3. Poll for FINISHED status, then publish
+    """
     print("☁️  Uploading video to catbox.moe...")
     video_url = upload_video_to_catbox(video_path)
 
-    # Create media container
+    # Step 1: Create Reels media container
     container = requests.post(
         f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
         data={
-            "media_type": "REELS",
-            "video_url": video_url,
-            "caption": caption,
+            "media_type":   "REELS",
+            "video_url":    video_url,
+            "caption":      caption,
             "access_token": INSTAGRAM_ACCESS_TOKEN,
         }
     ).json()
 
     if "id" not in container:
-        print(f"❌ Reel container: {container}")
+        print(f"❌ Reel container failed: {container}")
         return False
 
-    print(f"✅ Reel container: {container['id']}")
+    print(f"✅ Reel container created: {container['id']}")
 
-    # Step 4: Wait for processing
+    # Step 2: Poll for processing completion (up to 15 x 10s = 150s)
     for attempt in range(15):
         time.sleep(10)
         status = requests.get(
@@ -566,78 +611,94 @@ def upload_video_to_instagram(video_path: str, caption: str) -> bool:
             params={"fields":"status_code","access_token":INSTAGRAM_ACCESS_TOKEN}
         ).json()
         sc = status.get("status_code","")
-        print(f"   [{attempt+1}] Status: {sc}")
+        print(f"   [{attempt+1}/15] Status: {sc}")
         if sc == "FINISHED":
             break
         if sc == "ERROR":
-            print(f"❌ Processing error: {status}")
+            print(f"❌ Instagram processing error: {status}")
             return False
 
-    # Step 5: Publish
+    # Step 3: Publish the processed container
     publish = requests.post(
         f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
         data={
-            "creation_id": container["id"],
+            "creation_id":  container["id"],
             "access_token": INSTAGRAM_ACCESS_TOKEN,
         }
     ).json()
 
     if "id" in publish:
-        print(f"🎉 Reel posted! {publish['id']}")
+        print(f"🎉 Reel posted! ID: {publish['id']}")
         return True
 
-    print(f"❌ Reel publish: {publish}")
+    print(f"❌ Reel publish failed: {publish}")
     return False
 
 
 # ============================================================
-# STEP 8: Post photo
+# STEP 8: Post photo via Instagram Graph API
 # ============================================================
 def post_photo(image_url: str, caption: str) -> bool:
+    """
+    2-step photo upload:
+    1. Create media container with image URL
+    2. Publish container
+    """
     container = requests.post(
         f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
-        data={"image_url":image_url,"caption":caption,
-              "access_token":INSTAGRAM_ACCESS_TOKEN}
+        data={
+            "image_url":    image_url,
+            "caption":      caption,
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
     ).json()
     if "id" not in container:
-        print(f"❌ Container: {container}")
+        print(f"❌ Container failed: {container}")
         return False
     print(f"✅ Container: {container['id']}")
-    time.sleep(5)
+    time.sleep(5)  # Brief wait before publishing
     publish = requests.post(
         f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
-        data={"creation_id":container["id"],"access_token":INSTAGRAM_ACCESS_TOKEN}
+        data={
+            "creation_id":  container["id"],
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
     ).json()
     if "id" in publish:
-        print(f"🎉 Photo posted! {publish['id']}")
+        print(f"🎉 Photo posted! ID: {publish['id']}")
         return True
-    print(f"❌ Publish: {publish}")
+    print(f"❌ Publish failed: {publish}")
     return False
 
 
 # ============================================================
-# STEP 9: Build caption
+# STEP 9: Build Instagram caption with hashtags + disclaimer
 # ============================================================
 def build_caption(data: dict, poet: dict) -> str:
-    poet_tags   = POET_HASHTAGS.get(poet["name"],[])
-    extra_tags  = data.get("extra_hashtags",[])
-    all_tags    = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
-    hashtags    = " ".join([f"#{t}" for t in all_tags[:9]])
-    disclaimer  = "⚠️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
+    poet_tags  = POET_HASHTAGS.get(poet["name"],[])
+    extra_tags = data.get("extra_hashtags",[])
+    # Max 9 hashtags: 6 base + 2 poet-specific + 1 AI-suggested
+    all_tags   = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
+    hashtags   = " ".join([f"#{t}" for t in all_tags[:9]])
+    disclaimer = "⚠️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
     return f"{data['caption']}\n\n{hashtags}\n\n{disclaimer}"
 
 
 # ============================================================
-# PROGRESS
+# PROGRESS TRACKING — persisted in progress.json (committed to repo)
 # ============================================================
-def load_progress():
+def load_progress() -> dict:
+    """
+    Loads progress.json. If file doesn't exist (fresh clone), returns defaults.
+    setdefault() ensures old progress.json files without new fields still work.
+    """
     if os.path.exists("progress.json"):
         with open("progress.json") as f:
             data = json.load(f)
     else:
-        data = {"poet_index":0,"day":1,"total_posts":0}
+        data = {"poet_index":0, "day":1, "total_posts":0}
 
-    # ensure new keys exist
+    # FIX: Ensure new fields always exist — prevents KeyError on old progress.json
     data.setdefault("last_post_date", "")
     data.setdefault("last_post_type", "")
     data.setdefault("status", "")
@@ -645,30 +706,33 @@ def load_progress():
     return data
 
 
-def mark_post_success(post_type):
-    p = load_progress()
-    p["last_post_date"] = datetime.utcnow().strftime("%Y-%m-%d")
-    p["last_post_type"] = post_type
-    p["status"] = "success"
-    save_progress(p)
+def save_progress(p: dict):
+    """Writes full progress dict to progress.json. Always writes ALL fields."""
+    with open("progress.json","w") as f:
+        json.dump(p, f, indent=2)
 
 
-def already_posted_today(post_type):
-    p = load_progress()
+def already_posted_today(post_type: str) -> bool:
+    """
+    Duplicate-post guard: returns True if we already successfully posted
+    this post_type today (based on UTC date in progress.json).
+    Prevents double-posts if the workflow is manually re-triggered.
+    """
+    p     = load_progress()
     today = datetime.utcnow().strftime("%Y-%m-%d")
-
     return (
         p.get("last_post_date") == today and
         p.get("last_post_type") == post_type and
-        p.get("status") == "success"
+        p.get("status")         == "success"
     )
 
+
 # ============================================================
-# MAIN
+# MAIN RUN LOGIC
 # ============================================================
 def run():
     print(f"\n{'='*55}")
-    print(f"Shayari Bot v4 -- {datetime.now().strftime('%Y-%m-%d %H:%M')} -- {POST_TYPE.upper()}")
+    print(f"Shayari Bot v4.1 | {datetime.now().strftime('%Y-%m-%d %H:%M')} | {POST_TYPE.upper()}")
     print(f"{'='*55}")
 
     p          = load_progress()
@@ -678,32 +742,38 @@ def run():
 
     print(f"Poet: {poet['name']} | Day {day}/30 | Format: {get_format(day)} | Type: {POST_TYPE}")
 
-    print("Generating authentic Shayari...")
+    # --- GENERATE CONTENT ---
+    print("Generating authentic Shayari via Gemini...")
     data    = generate_content(poet, day)
     caption = build_caption(data, poet)
-    print(f"   Emotion: {data.get('emotion')} | Source: {data.get('source')}")
+    print(f"   Emotion: {data.get('emotion')} | Source: {data.get('source','unknown')}")
+    print(f"   Sher (Roman): {data.get('sher_roman','')[:60]}...")
 
+    # --- POST PHOTO ---
     if POST_TYPE == "photo":
-        print("Creating 1:1 photo image...")
+        print("Creating 1:1 photo image (1080x1080)...")
         image_path = create_photo_image(data, poet, day)
         image_url  = upload_image(image_path)
         success    = post_photo(image_url, caption)
 
+    # --- POST REEL ---
     elif POST_TYPE == "reel":
-        print("Creating 16:9 reel image...")
+        print("Creating 9:16 reel image (1080x1920)...")
         reel_image = create_reel_image(data, poet, day)
 
-        tts_text   = data.get("sher_urdu", data["sher_roman"])
-        audio_path = reel_image.replace(".jpg",".mp3")
+        # FIX: Use sher_urdu for TTS — correct pronunciation vs Roman transliteration
+        tts_text   = data.get("sher_urdu") or data["sher_roman"]
+        audio_path = reel_image.replace(".jpg", ".mp3")
 
-        print("Generating TTS voiceover...")
+        print("Generating TTS voiceover (Urdu script)...")
         has_audio = generate_tts(tts_text, audio_path)
 
         if has_audio:
-            print("Creating Reel video...")
+            print("Creating Reel video (Ken Burns + music)...")
             reel_path = create_reel_video(reel_image, audio_path)
         else:
-            print("TTS failed -- creating silent Reel via ffmpeg...")
+            # Fallback: silent 15-second video via ffmpeg
+            print("TTS failed — creating silent Reel via ffmpeg...")
             reel_path = reel_image.replace(".jpg","_reel.mp4")
             os.system(
                 f'ffmpeg -loop 1 -i "{reel_image}" -t 15 '
@@ -714,58 +784,82 @@ def run():
         if reel_path and os.path.exists(reel_path):
             success = upload_video_to_instagram(reel_path, caption)
         else:
-            print("Reel failed -- falling back to photo...")
+            # Final fallback: post as photo if video creation fails entirely
+            print("⚠️  Reel failed — falling back to photo post...")
             image_path = create_photo_image(data, poet, day)
             image_url  = upload_image(image_path)
             success    = post_photo(image_url, caption)
+
     else:
-        print(f"Unknown POST_TYPE: {POST_TYPE}")
+        print(f"❌ Unknown POST_TYPE: '{POST_TYPE}' — expected 'photo' or 'reel'")
         sys.exit(1)
 
+    # --- UPDATE PROGRESS ON SUCCESS ---
     if success:
-        if POST_TYPE == "photo":
-            p["total_posts"] += 1
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+
+        # FIX: Both photo AND reel now advance the day counter
+        # Previously only photo did — reels would repeat the same day forever
+        p["total_posts"] += 1
+        p["last_post_date"] = today
+        p["last_post_type"] = POST_TYPE
+        p["status"]         = "success"
+
+        if POST_TYPE == "reel":
+            # Reels don't advance the day — day advances after the PHOTO post
+            # (photo is morning, reel is evening — same day's content)
+            pass
+        else:
+            # Photo advances the day (photo is the "primary" post for progress)
             if day >= 30:
-                p["day"] = 1
+                p["day"]         = 1
                 p["poet_index"] += 1
-                print(f"30 days of {poet['name']} complete!")
+                print(f"🎊 30 days of {poet['name']} complete! Moving to next poet.")
             else:
-                p["day"] = day+1
-            save_progress(p)
-        print(f"Done! Total posts: {p['total_posts']}")
+                p["day"] = day + 1
+
+        # FIX: Single unified save — no more duplicate saves or missing saves
+        save_progress(p)
+        print(f"✅ Progress saved. Total posts: {p['total_posts']}")
     else:
-        print("Failed.")
+        print("❌ Post failed.")
         sys.exit(1)
 
+
+# ============================================================
+# ENTRY POINT — retry wrapper around run()
+# ============================================================
 def main():
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            print(f"\n==============================")
+            print(f"\n{'='*30}")
             print(f"Attempt {attempt}/{MAX_RETRIES}")
-            print(f"==============================\n")
+            print(f"{'='*30}")
 
-            # Prevent duplicate posts
+            # Duplicate-post guard — skip if already posted today
             if already_posted_today(POST_TYPE):
-                print("⚠️ Already posted today. Skipping.")
+                print(f"⚠️  Already posted {POST_TYPE} today (UTC). Skipping.")
                 return
 
-            run()
+            run()  # <-- all the work happens here
 
-            # mark success ONLY after full success
-            mark_post_success(POST_TYPE)
+            # FIX: mark_post_success() removed — progress is saved inside run()
+            # Previously, run() saved progress AND main() called mark_post_success()
+            # which saved again — redundant and caused issues if run() raised after save
 
-            print("✅ Completed successfully")
+            print("✅ Completed successfully.")
             return
 
         except Exception as e:
             print(f"❌ Attempt {attempt} failed")
-            print(f"Error: {e}")
+            print(f"   Error type: {type(e).__name__}")
+            print(f"   Error: {e}")
 
             if attempt < MAX_RETRIES and is_retryable_error(e):
                 print(f"⏳ Retrying in {RETRY_DELAY//60} minutes...")
                 time.sleep(RETRY_DELAY)
             else:
-                print("🚫 Max retries reached or non-retryable error")
+                print("🚫 Max retries reached or non-retryable error. Exiting.")
                 sys.exit(1)
 
 

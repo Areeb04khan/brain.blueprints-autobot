@@ -2,8 +2,8 @@ name: Daily Shayari Post
 
 on:
   schedule:
-    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST — Photo
-    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST — Reel
+    - cron: '30 2 * * *'   # 2:30 AM UTC = 8:00 AM IST — Photo post
+    - cron: '30 13 * * *'  # 1:30 PM UTC = 7:00 PM IST — Reel post
   workflow_dispatch:
     inputs:
       post_type:
@@ -42,11 +42,21 @@ jobs:
         id: post_type
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual trigger — use whatever the user selected
             echo "type=${{ github.event.inputs.post_type }}" >> $GITHUB_OUTPUT
-          elif [ "$(date -u +%H)" -le "04" ]; then
-            echo "type=photo" >> $GITHUB_OUTPUT
+
           else
-            echo "type=reel" >> $GITHUB_OUTPUT
+            # Scheduled trigger — detect by UTC hour
+            # FIX: was comparing string "02" with -le, which always evaluated oddly.
+            # Now using integer arithmetic: hour 0-4 UTC = 5:30-9:30 AM IST = photo window
+            HOUR=$(date -u +%H | sed 's/^0*//')  # Strip leading zero so bash treats as integer
+            HOUR=${HOUR:-0}                        # Default to 0 if empty (midnight edge case)
+
+            if [ "$HOUR" -le 4 ]; then
+              echo "type=photo" >> $GITHUB_OUTPUT  # 2:30 AM UTC trigger lands here
+            else
+              echo "type=reel" >> $GITHUB_OUTPUT   # 1:30 PM UTC trigger lands here
+            fi
           fi
 
       - name: Run Shayari Bot
@@ -61,7 +71,9 @@ jobs:
       - name: Save progress to repo
         if: always()
         run: |
+          # Pull latest first to avoid push conflicts
           git pull origin master
           git add progress.json
+          # Only commit if progress.json actually changed (--quiet exits 0 if no diff)
           git diff --staged --quiet || git commit -m "Update progress [skip ci]"
           git push
