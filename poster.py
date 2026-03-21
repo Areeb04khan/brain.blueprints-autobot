@@ -86,12 +86,12 @@ POET_SCHEDULE = [
 # one-liner (1 misra), couplet (2 lines), longer (4-6 lines)
 # ============================================================
 FORMAT_MAP = {
-    1:"couplet",    2:"one-liner",  3:"couplet",   4:"longer",    5:"couplet",
-    6:"one-liner",  7:"longer",     8:"couplet",   9:"one-liner", 10:"couplet",
-    11:"longer",    12:"couplet",   13:"one-liner", 14:"longer",   15:"couplet",
-    16:"one-liner", 17:"couplet",   18:"longer",    19:"couplet",  20:"one-liner",
-    21:"longer",    22:"couplet",   23:"one-liner", 24:"couplet",  25:"longer",
-    26:"couplet",   27:"one-liner", 28:"longer",    29:"couplet",  30:"one-liner",
+    1:"couplet",    2:"four-liner",  3:"couplet",   4:"longer",    5:"couplet",
+    6:"four-liner",  7:"longer",     8:"couplet",   9:"one-liner", 10:"couplet",
+    11:"longer",    12:"couplet",   13:"four-liner", 14:"longer",   15:"couplet",
+    16:"four-liner", 17:"couplet",   18:"longer",    19:"couplet",  20:"four-liner",
+    21:"longer",    22:"couplet",   23:"four-liner", 24:"couplet",  25:"longer",
+    26:"couplet",   27:"four-liner", 28:"longer",    29:"couplet",  30:"four-liner",
 }
 def get_format(day): return FORMAT_MAP.get(day, "couplet")
 
