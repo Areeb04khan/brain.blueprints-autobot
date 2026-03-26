@@ -634,23 +634,28 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
         return None
 
 
+
+
 # ============================================================
-# STEP 6: Upload image to imgbb (photos only — free hosting)
+# STEP 6: Upload image to catbox.moe (photos — same host as reels)
+# FIX: imgbb URLs were being rejected by Instagram's servers with error 9004
+# ("media could not be fetched"). catbox.moe works reliably for both
+# photos and videos with Instagram's Graph API.
+# IMGBB_API_KEY secret is no longer needed but harmless to keep.
 # ============================================================
 def upload_image(path: str) -> str:
-    """Uploads JPEG to imgbb.com and returns public URL for Instagram API."""
-    with open(path,"rb") as f:
-        data = base64.b64encode(f.read()).decode("utf-8")
-    result = requests.post(
-        "https://api.imgbb.com/1/upload",
-        data={"key":IMGBB_API_KEY,"image":data}
-    ).json()
-    if result.get("success"):
-        url = result["data"]["url"]
-        print(f"✅ Uploaded: {url}")
+    """Uploads JPEG to catbox.moe and returns public URL for Instagram API."""
+    with open(path, "rb") as f:
+        result = requests.post(
+            "https://catbox.moe/user/api.php",
+            data={"reqtype": "fileupload", "userhash": ""},
+            files={"fileToUpload": f}
+        )
+    url = result.text.strip()
+    if url.startswith("https://"):
+        print(f"✅ Photo hosted: {url}")
         return url
-    raise Exception(f"imgbb failed: {result}")
-
+    raise Exception(f"catbox upload failed: {result.text}")
 
 # ============================================================
 # STEP 7: Upload video to catbox.moe + post as Instagram Reel
