@@ -68,8 +68,7 @@ FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 # Add new poets freely at the bottom — the bot picks up automatically
 # ============================================================
 POET_SCHEDULE = [
-    # ── CLASSICAL URDU (pre-1900) ──────────────────────────────
-    {"name": "Mirza Ghalib",          "era": "1797-1869"},  # most followed
+    # ── CLASSICAL URDU (pre-1900) ──────────────────────────────
     {"name": "Mir Taqi Mir",          "era": "1723-1810"},  # Khuda-e-Sukhan
     {"name": "Mir Dard",              "era": "1721-1785"},  # Sufi mysticism
     {"name": "Sauda",                 "era": "1713-1781"},  # satirical genius
