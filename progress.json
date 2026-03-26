@@ -1,8 +1,30 @@
 {
-  "poet_index": 0,
-  "total_posts": 2,
+  "poet_index": 1,
+  "total_posts": 3,
   "last_post_date": "2026-03-26",
-  "last_post_type": "reel",
+  "last_post_type": "photo",
   "status": "success",
-  "today_content": null
+  "today_content": {
+    "sher_roman": "Ibtida-e-ishq hai rotaa hai kya,\nAage aage dekhiye hota hai kya.",
+    "sher_urdu": "\u0627\u0628\u062a\u062f\u0627\u0650 \u0639\u0634\u0642 \u06c1\u06d2 \u0631\u0648\u062a\u0627 \u06c1\u06d2 \u06a9\u06cc\u0627\n\u0622\u06af\u06d2 \u0622\u06af\u06d2 \u062f\u06cc\u06a9\u06be\u0626\u06d2 \u06c1\u0648\u062a\u0627 \u06c1\u06d2 \u06a9\u06cc\u0627",
+    "english_translation": "This is just the beginning of love, why do you weep? Wait and see what's yet to unfold.",
+    "source": "Diwan-e-Mir",
+    "emotion": "ishq",
+    "bg_color": "#330000",
+    "text_color": "#F0F2E9",
+    "accent_color": "#FFD700",
+    "format": "couplet",
+    "caption": "Kya ye ishq ki buniyaad nahi, ke dard se waaqif ho?\nMir Taqi Mir ki zindagi khud ishq aur ranj ka ek lamba safar thi. Kai ahbaab aur unke bacchon ki maut, muashi tangdasti, aur unki shairi mein jhalakti dil ki har aah, is sher ki gehraai ko aur badhati hai.\n\nIs ghazal ke kuch aur ash'aar:\nQaid mein ab bhi hai wohi Mir,\nPhir jo aage dekhiye hota hai kya.\n\nShab ko us ke dar pe jaa soye, Mir,\nAb wahi sarfaroshi hoti hai.\nAapki zindagi mein kab aaya tha aisa waqt?",
+    "extra_hashtags": [
+      "MirTaqiMir",
+      "UrduPoetry",
+      "Shayari",
+      "Ishq",
+      "Dard",
+      "ClassicalPoetry",
+      "Ghazal",
+      "MirKeAsh'aar",
+      "LoveAndPain"
+    ]
+  }
 }
