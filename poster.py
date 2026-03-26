@@ -369,4 +369,608 @@ def create_photo_image(data: dict, poet: dict) -> str:
         font_brand = ImageFont.truetype(FONT_SANS,   16)
         font_src   = ImageFont.truetype(FONT_ITALIC, 15)
     except:
-        font_poet=font_day=font_trans=font_brand=font_src=ImageFont.
+        font_poet=font_day=font_trans=font_brand=font_src=ImageFont.load_default()
+
+    # Sher font size varies by format
+    fmt = data.get("format","couplet")
+    fs  = 50 if fmt=="one-liner" else (44 if fmt=="couplet" else 38)
+    try:    font_sher = ImageFont.truetype(FONT_SERIF, fs)
+    except: font_sher = font_poet
+
+    def center(text, y, font, color):
+        """Draw text horizontally centered at y position."""
+        bbox = draw.textbbox((0,0),text,font=font)
+        tw   = bbox[2]-bbox[0]
+        draw.text(((W-tw)/2,y), text, font=font, fill=color)
+
+    # --- HEADER SECTION ---
+    draw_divider(draw, W//2, 65, palette["accent"], 60)
+    center(f"-- {poet['name']} --", 85, font_poet, palette["accent"])
+    center(poet["era"], 128, font_day, palette["sub"])
+    draw.line([(65,162),(W-65,162)], fill=palette["border"], width=1)
+
+    # --- SHER SECTION — centered vertically in zone 178–720 ---
+    lines       = data["sher_roman"].strip().split("\n")
+    all_wrapped = []
+    for line in lines:
+        # Wrap long lines at 36 chars to fit within border
+        w2 = textwrap.wrap(line.strip(), width=36)
+        all_wrapped.extend(w2 if w2 else [""])  # empty string preserves blank lines
+
+    line_h  = int(fs*1.38)
+    total_h = len(all_wrapped)*line_h
+    y_pos   = 178 + max(0,(542-total_h)//2)  # vertical center in sher zone
+    for wline in all_wrapped:
+        center(wline, y_pos, font_sher, palette["text"])
+        y_pos += line_h
+
+    # --- DIVIDER between sher and translation ---
+    div_y = max(y_pos+20, 730)
+    draw_divider(draw, W//2, div_y, palette["accent"])
+
+    # --- TRANSLATION SECTION ---
+    trans   = f'"{data["english_translation"]}"'
+    tlines  = textwrap.wrap(trans, width=54)
+    tlh     = 27
+    total_t = len(tlines)*tlh
+    y_pos   = div_y+20 + max(0,(130-total_t)//2)
+    for line in tlines:
+        center(line, y_pos, font_trans, palette["accent"])
+        y_pos += tlh
+
+    # Source attribution (e.g. "-- Diwan-e-Ghalib")
+    src = data.get("source","")
+    if src and src.lower() not in ("unknown",""):
+        center(f"-- {src}", y_pos+6, font_src, palette["sub"])
+
+    # --- FOOTER ---
+    draw.line([(65,908),(W-65,908)], fill=palette["border"], width=1)
+    draw_divider(draw, W//2, 935, palette["accent"], 60)
+    center(IG_HANDLE, 962, font_brand, palette["sub"])
+
+    # --- VIGNETTE — dark edges fade inward for cinematic look ---
+    vig  = Image.new("RGBA",(W,H),(0,0,0,0))
+    vd   = ImageDraw.Draw(vig)
+    for i in range(80):
+        vd.rectangle([i,i,W-i,H-i], outline=(0,0,0,int(i*1.8)))
+    img = img.convert("RGBA")
+    img = Image.alpha_composite(img, vig)
+    img = img.convert("RGB")
+
+    os.makedirs("output", exist_ok=True)
+    fname = f"output/photo_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    img.save(fname, "JPEG", quality=95)
+    print(f"✅ Photo image: {fname}")
+    return fname
+
+
+# ============================================================
+# STEP 3: Create 9:16 reel image (1080x1920)
+# ============================================================
+def create_reel_image(data: dict, poet: dict) -> str:
+    W, H    = 1080, 1920
+    emotion = data.get("emotion","dard").lower()
+    palette = dict(EMOTION_PALETTES.get(emotion, DEFAULT_PALETTE))
+    for key,field in [("bg","bg_color"),("text","text_color"),("accent","accent_color")]:
+        v = data.get(field,"")
+        if v and v.startswith("#") and len(v)==7:
+            palette[key] = v
+
+    img  = Image.new("RGB",(W,H), color=palette["bg"])
+    draw = ImageDraw.Draw(img, "RGBA")
+    add_texture(draw, W, H, palette["accent"])
+    draw_border(draw, palette, W, H)
+
+    # Slightly larger fonts for the taller canvas
+    try:
+        font_poet  = ImageFont.truetype(FONT_SERIF,  34)
+        font_day   = ImageFont.truetype(FONT_ITALIC, 22)
+        font_trans = ImageFont.truetype(FONT_ITALIC, 24)
+        font_brand = ImageFont.truetype(FONT_SANS,   20)
+        font_src   = ImageFont.truetype(FONT_ITALIC, 19)
+    except:
+        font_poet=font_day=font_trans=font_brand=font_src=ImageFont.load_default()
+
+    fmt = data.get("format","couplet")
+    fs  = 62 if fmt=="one-liner" else (54 if fmt=="couplet" else 46)
+    try:    font_sher = ImageFont.truetype(FONT_SERIF, fs)
+    except: font_sher = font_poet
+
+    def center(text, y, font, color):
+        bbox = draw.textbbox((0,0),text,font=font)
+        tw   = bbox[2]-bbox[0]
+        draw.text(((W-tw)/2,y), text, font=font, fill=color)
+
+    # --- HEADER ---
+    draw_divider(draw, W//2, 100, palette["accent"], 80)
+    center(f"-- {poet['name']} --", 130, font_poet, palette["accent"])
+    center(poet["era"], 185, font_day, palette["sub"])
+    draw.line([(80,225),(W-80,225)], fill=palette["border"], width=1)
+
+    # --- SHER — vertically centered in zone 300–1400 ---
+    lines       = data["sher_roman"].strip().split("\n")
+    all_wrapped = []
+    for line in lines:
+        w2 = textwrap.wrap(line.strip(), width=34)
+        all_wrapped.extend(w2 if w2 else [""])
+
+    line_h  = int(fs*1.4)
+    total_h = len(all_wrapped)*line_h
+    y_pos   = 300 + max(0,(1100-total_h)//2)
+    for wline in all_wrapped:
+        center(wline, y_pos, font_sher, palette["text"])
+        y_pos += line_h
+
+    # --- DIVIDER ---
+    div_y = max(y_pos+40, 1430)
+    draw_divider(draw, W//2, div_y, palette["accent"], 120)
+
+    # --- TRANSLATION ---
+    trans   = f'"{data["english_translation"]}"'
+    tlines  = textwrap.wrap(trans, width=46)
+    tlh     = 34
+    total_t = len(tlines)*tlh
+    y_pos   = div_y+30 + max(0,(200-total_t)//2)
+    for line in tlines:
+        center(line, y_pos, font_trans, palette["accent"])
+        y_pos += tlh
+
+    src = data.get("source","")
+    if src and src.lower() not in ("unknown",""):
+        center(f"-- {src}", y_pos+10, font_src, palette["sub"])
+
+    # --- FOOTER ---
+    draw.line([(80,H-160),(W-80,H-160)], fill=palette["border"], width=1)
+    draw_divider(draw, W//2, H-125, palette["accent"], 80)
+    center(IG_HANDLE, H-85, font_brand, palette["sub"])
+
+    # --- VIGNETTE ---
+    vig = Image.new("RGBA",(W,H),(0,0,0,0))
+    vd  = ImageDraw.Draw(vig)
+    for i in range(80):
+        vd.rectangle([i,i,W-i,H-i], outline=(0,0,0,int(i*1.8)))
+    img = img.convert("RGBA")
+    img = Image.alpha_composite(img, vig)
+    img = img.convert("RGB")
+
+    os.makedirs("output", exist_ok=True)
+    fname = f"output/reel_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    img.save(fname, "JPEG", quality=95)
+    print(f"✅ Reel image: {fname}")
+    return fname
+
+
+# ============================================================
+# STEP 4: Edge TTS voiceover — uses Urdu script for pronunciation
+# ============================================================
+def generate_tts(text: str, output_path: str) -> bool:
+    """
+    FIX: Now receives sher_urdu (Urdu script) instead of sher_roman.
+    Edge TTS pronounces Urdu script far more accurately than Roman transliteration.
+    Voice: ur-PK-AsadNeural — male Urdu voice, -15% rate for poetry pacing.
+    """
+    try:
+        import asyncio
+        import edge_tts
+        VOICE = "ur-PK-AsadNeural"
+
+        async def _speak():
+            communicate = edge_tts.Communicate(text, VOICE, rate="-15%", pitch="-5Hz")
+            await communicate.save(output_path)
+
+        asyncio.run(_speak())
+        print(f"✅ TTS: {output_path}")
+        return True
+    except Exception as e:
+        print(f"❌ TTS error: {e}")
+        return False
+
+
+# ============================================================
+# STEP 5: Reel video — Ken Burns zoom + TTS voice + music
+# ============================================================
+def get_random_music() -> str:
+    """Pick a random royalty-free MP3 from the music/ folder."""
+    music_dir = "music"
+    if not os.path.exists(music_dir):
+        return None
+    tracks = [f for f in os.listdir(music_dir) if f.endswith(".mp3")]
+    if not tracks:
+        return None
+    chosen = random.choice(tracks)
+    print(f"🎵 Music: {chosen}")
+    return os.path.join(music_dir, chosen)
+
+
+def create_reel_video(image_path: str, tts_path: str) -> str:
+    """
+    Combines the reel image + TTS audio + background music into an MP4.
+    Ken Burns effect: slow 4% zoom over the clip duration.
+    Music is mixed at 18% volume under the voice.
+    """
+    try:
+        from moviepy.editor import ImageClip, AudioFileClip, CompositeAudioClip
+        import numpy as np
+
+        # TTS audio drives the video duration (capped at 59s for Instagram)
+        tts_audio = AudioFileClip(tts_path)
+        duration  = min(tts_audio.duration + 2, 59)
+
+        # Mix background music under voice
+        music_path = get_random_music()
+        if music_path:
+            music       = AudioFileClip(music_path).subclip(0, duration)
+            music       = music.volumex(0.18)        # 18% — subtle background
+            tts_audio   = tts_audio.volumex(1.0)     # 100% — voice is primary
+            final_audio = CompositeAudioClip([music, tts_audio])
+        else:
+            final_audio = tts_audio
+
+        # Slow Ken Burns zoom: starts at 100%, ends at 104%
+        clip = ImageClip(image_path, duration=duration)
+        W, H = clip.size
+
+        def make_frame(t):
+            zoom  = 1 + 0.04*(t/duration)  # linear zoom from 1.0 to 1.04
+            frame = clip.get_frame(t)
+            from PIL import Image as PI
+            fi    = PI.fromarray(frame)
+            nw,nh = int(W*zoom), int(H*zoom)
+            fi    = fi.resize((nw,nh), PI.LANCZOS)
+            # Crop back to original size from center
+            l,tp  = (nw-W)//2, (nh-H)//2
+            fi    = fi.crop((l,tp,l+W,tp+H))
+            return np.array(fi)
+
+        video     = clip.fl(lambda gf,t: make_frame(t)).set_audio(final_audio)
+        reel_path = image_path.replace(".jpg","_reel.mp4")
+        video.write_videofile(
+            reel_path, fps=24, codec="libx264",
+            audio_codec="aac", verbose=False, logger=None
+        )
+        print(f"✅ Reel video: {reel_path}")
+        return reel_path
+    except Exception as e:
+        print(f"❌ Reel video failed: {e}")
+        return None
+
+
+# ============================================================
+# STEP 6: Upload image to imgbb (photos only — free hosting)
+# ============================================================
+def upload_image(path: str) -> str:
+    """Uploads JPEG to imgbb.com and returns public URL for Instagram API."""
+    with open(path,"rb") as f:
+        data = base64.b64encode(f.read()).decode("utf-8")
+    result = requests.post(
+        "https://api.imgbb.com/1/upload",
+        data={"key":IMGBB_API_KEY,"image":data}
+    ).json()
+    if result.get("success"):
+        url = result["data"]["url"]
+        print(f"✅ Uploaded: {url}")
+        return url
+    raise Exception(f"imgbb failed: {result}")
+
+
+# ============================================================
+# STEP 7: Upload video to catbox.moe + post as Instagram Reel
+# ============================================================
+def upload_video_to_catbox(video_path: str) -> str:
+    """
+    Uploads MP4 to catbox.moe (free, anonymous) and returns public HTTPS URL.
+    Instagram's Graph API requires a publicly accessible video URL.
+    """
+    with open(video_path,"rb") as f:
+        result = requests.post(
+            "https://catbox.moe/user/api.php",
+            data={"reqtype": "fileupload", "userhash": ""},
+            files={"fileToUpload": f}
+        )
+    url = result.text.strip()
+    if url.startswith("https://"):
+        print(f"✅ Video hosted: {url}")
+        return url
+    raise Exception(f"catbox upload failed: {result.text}")
+
+
+def upload_video_to_instagram(video_path: str, caption: str) -> bool:
+    """
+    3-step Instagram Reels upload:
+    1. Upload MP4 to catbox.moe for public URL
+    2. Create media container (Instagram processes video asynchronously)
+    3. Poll for FINISHED status, then publish
+    """
+    print("☁️  Uploading video to catbox.moe...")
+    video_url = upload_video_to_catbox(video_path)
+
+    # Step 1: Create Reels media container
+    container = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
+        data={
+            "media_type":   "REELS",
+            "video_url":    video_url,
+            "caption":      caption,
+            "access_token": INSTAGRAM_ACCESS_TOKEN,
+        }
+    ).json()
+
+    if "id" not in container:
+        print(f"❌ Reel container failed: {container}")
+        return False
+
+    print(f"✅ Reel container created: {container['id']}")
+
+    # Step 2: Poll for processing completion (up to 15 x 10s = 150s)
+    for attempt in range(15):
+        time.sleep(10)
+        status = requests.get(
+            f"https://graph.instagram.com/v21.0/{container['id']}",
+            params={"fields":"status_code","access_token":INSTAGRAM_ACCESS_TOKEN}
+        ).json()
+        sc = status.get("status_code","")
+        print(f"   [{attempt+1}/15] Status: {sc}")
+        if sc == "FINISHED":
+            break
+        if sc == "ERROR":
+            print(f"❌ Instagram processing error: {status}")
+            return False
+
+    # Step 3: Publish the processed container
+    publish = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
+        data={
+            "creation_id":  container["id"],
+            "access_token": INSTAGRAM_ACCESS_TOKEN,
+        }
+    ).json()
+
+    if "id" in publish:
+        print(f"🎉 Reel posted! ID: {publish['id']}")
+        return True
+
+    print(f"❌ Reel publish failed: {publish}")
+    return False
+
+
+# ============================================================
+# STEP 8: Post photo via Instagram Graph API
+# ============================================================
+def post_photo(image_url: str, caption: str) -> bool:
+    """
+    2-step photo upload:
+    1. Create media container with image URL
+    2. Publish container
+    """
+    container = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
+        data={
+            "image_url":    image_url,
+            "caption":      caption,
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
+    ).json()
+    if "id" not in container:
+        print(f"❌ Container failed: {container}")
+        return False
+    print(f"✅ Container: {container['id']}")
+    time.sleep(5)  # Brief wait before publishing
+    publish = requests.post(
+        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
+        data={
+            "creation_id":  container["id"],
+            "access_token": INSTAGRAM_ACCESS_TOKEN
+        }
+    ).json()
+    if "id" in publish:
+        print(f"🎉 Photo posted! ID: {publish['id']}")
+        return True
+    print(f"❌ Publish failed: {publish}")
+    return False
+
+
+# ============================================================
+# STEP 9: Build Instagram caption with hashtags + disclaimer
+# ============================================================
+def build_caption(data: dict, poet: dict) -> str:
+    poet_tags  = POET_HASHTAGS.get(poet["name"],[])
+    extra_tags = data.get("extra_hashtags",[])
+    # Max 9 hashtags: 6 base + 2 poet-specific + 1 AI-suggested
+    all_tags   = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
+    hashtags   = " ".join([f"#{t}" for t in all_tags[:9]])
+    disclaimer = "⚠️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
+    return f"{data['caption']}\n\n{hashtags}\n\n{disclaimer}"
+
+
+# ============================================================
+# PROGRESS TRACKING — persisted in progress.json (committed to repo)
+# ============================================================
+def load_progress() -> dict:
+    """
+    Loads progress.json. If file doesn't exist (fresh clone), returns defaults.
+    setdefault() ensures old progress.json files without new fields still work.
+    """
+    if os.path.exists("progress.json"):
+        with open("progress.json") as f:
+            data = json.load(f)
+    else:
+        data = {"poet_index":0, "total_posts":0}
+
+    # FIX: Ensure new fields always exist — prevents KeyError on old progress.json
+    data.setdefault("last_post_date", "")
+    data.setdefault("last_post_type", "")
+    data.setdefault("status", "")
+
+    return data
+
+
+def save_progress(p: dict):
+    """Writes full progress dict to progress.json. Always writes ALL fields."""
+    with open("progress.json","w") as f:
+        json.dump(p, f, indent=2)
+
+
+def already_posted_today(post_type: str) -> bool:
+    """
+    Duplicate-post guard: returns True if we already successfully posted
+    this post_type today (based on UTC date in progress.json).
+    Prevents double-posts if the workflow is manually re-triggered.
+    """
+    p     = load_progress()
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+    return (
+        p.get("last_post_date") == today and
+        p.get("last_post_type") == post_type and
+        p.get("status")         == "success"
+    )
+
+
+# ============================================================
+# MAIN RUN LOGIC
+# ============================================================
+def run():
+    print(f"\n{'='*55}")
+    print(f"Shayari Bot v4.2 | {datetime.now().strftime('%Y-%m-%d %H:%M')} | {POST_TYPE.upper()}")
+    print(f"{'='*55}")
+
+    p          = load_progress()
+    poet_index = p["poet_index"] % len(POET_SCHEDULE)
+    poet       = POET_SCHEDULE[poet_index]
+    fmt        = get_format()  # weighted random format for today
+
+    print(f"Poet: {poet['name']} ({poet['era']}) | Format: {fmt} | Type: {POST_TYPE}")
+
+    # --- GENERATE OR LOAD CONTENT ---
+    # FIX: Reel reuses the same content generated by the morning photo post.
+    # This prevents Gemini generating a different sher for the reel.
+    # Photo saves "today_content" to progress.json after posting.
+    # Reel loads it: same sher, same caption, different visual (9:16 vs 1:1).
+    # Fallback: if today_content missing, generate fresh (reel triggered manually).
+    if POST_TYPE == "reel" and p.get("today_content"):
+        print("Loading today's sher from photo post (reusing for reel)...")
+        data = p["today_content"]
+    else:
+        print("Generating authentic Shayari via Gemini...")
+        data = generate_content(poet, fmt)
+
+    caption = build_caption(data, poet)
+    print(f"   Emotion: {data.get('emotion')} | Source: {data.get('source','unknown')}")
+    print(f"   Sher (Roman): {data.get('sher_roman','')[:60]}...")
+
+    # --- POST PHOTO ---
+    if POST_TYPE == "photo":
+        print("Creating 1:1 photo image (1080x1080)...")
+        image_path = create_photo_image(data, poet)
+        image_url  = upload_image(image_path)
+        success    = post_photo(image_url, caption)
+
+    # --- POST REEL ---
+    elif POST_TYPE == "reel":
+        print("Creating 9:16 reel image (1080x1920)...")
+        reel_image = create_reel_image(data, poet)
+
+        # FIX: Use sher_urdu for TTS — correct pronunciation vs Roman transliteration
+        tts_text   = data.get("sher_urdu") or data["sher_roman"]
+        audio_path = reel_image.replace(".jpg", ".mp3")
+
+        print("Generating TTS voiceover (Urdu script)...")
+        has_audio = generate_tts(tts_text, audio_path)
+
+        if has_audio:
+            print("Creating Reel video (Ken Burns + music)...")
+            reel_path = create_reel_video(reel_image, audio_path)
+        else:
+            # Fallback: silent 15-second video via ffmpeg
+            print("TTS failed — creating silent Reel via ffmpeg...")
+            reel_path = reel_image.replace(".jpg","_reel.mp4")
+            os.system(
+                f'ffmpeg -loop 1 -i "{reel_image}" -t 15 '
+                f'-vf "scale=1080:1920" -c:v libx264 -pix_fmt yuv420p '
+                f'"{reel_path}" -y -loglevel error'
+            )
+
+        if reel_path and os.path.exists(reel_path):
+            success = upload_video_to_instagram(reel_path, caption)
+        else:
+            # Final fallback: post as photo if video creation fails entirely
+            print("⚠️  Reel failed — falling back to photo post...")
+            image_path = create_photo_image(data, poet)
+            image_url  = upload_image(image_path)
+            success    = post_photo(image_url, caption)
+
+    else:
+        print(f"❌ Unknown POST_TYPE: '{POST_TYPE}' — expected 'photo' or 'reel'")
+        sys.exit(1)
+
+    # --- UPDATE PROGRESS ON SUCCESS ---
+    if success:
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+
+        p["total_posts"]    += 1
+        p["last_post_date"]  = today
+        p["last_post_type"]  = POST_TYPE
+        p["status"]          = "success"
+
+        if POST_TYPE == "photo":
+            # Save today's generated content so the reel can reuse it later
+            # Without this, evening reel generates a fresh sher = duplicate day
+            p["today_content"] = data
+
+            # Photo advances to next poet (1 poet per day now)
+            p["poet_index"] += 1
+            next_poet = POET_SCHEDULE[p["poet_index"] % len(POET_SCHEDULE)]
+            print(f"Moving to next poet: {next_poet['name']}")
+
+        else:  # reel
+            # Reel does NOT advance the day — same day as the morning photo
+            # Clear today_content after reel so tomorrow starts fresh
+            p["today_content"] = None
+
+        save_progress(p)
+        print(f"\u2705 Progress saved. Total posts: {p['total_posts']}")
+    else:
+        print("\u274c Post failed.")
+        sys.exit(1)
+        print("❌ Post failed.")
+        sys.exit(1)
+
+
+# ============================================================
+# ENTRY POINT — retry wrapper around run()
+# ============================================================
+def main():
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            print(f"\n{'='*30}")
+            print(f"Attempt {attempt}/{MAX_RETRIES}")
+            print(f"{'='*30}")
+
+            # Duplicate-post guard — skip if already posted today
+            if already_posted_today(POST_TYPE):
+                print(f"⚠️  Already posted {POST_TYPE} today (UTC). Skipping.")
+                return
+
+            run()  # <-- all the work happens here
+
+            # FIX: mark_post_success() removed — progress is saved inside run()
+            # Previously, run() saved progress AND main() called mark_post_success()
+            # which saved again — redundant and caused issues if run() raised after save
+
+            print("✅ Completed successfully.")
+            return
+
+        except Exception as e:
+            print(f"❌ Attempt {attempt} failed")
+            print(f"   Error type: {type(e).__name__}")
+            print(f"   Error: {e}")
+
+            if attempt < MAX_RETRIES and is_retryable_error(e):
+                print(f"⏳ Retrying in {RETRY_DELAY//60} minutes...")
+                time.sleep(RETRY_DELAY)
+            else:
+                print("🚫 Max retries reached or non-retryable error. Exiting.")
+                sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
