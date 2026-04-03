@@ -1,8 +1,32 @@
 {
-  "poet_index": 5,
-  "total_posts": 14,
-  "last_post_date": "2026-04-02",
-  "last_post_type": "reel",
+  "poet_index": 6,
+  "total_posts": 15,
+  "last_post_date": "2026-04-03",
+  "last_post_type": "photo",
   "status": "success",
-  "today_content": null
+  "today_content": {
+    "sher_roman": "Woh jo hum mein tum mein qaraar tha, tumhe yaad ho ke na yaad ho\nWahi ya'ani wa'ada nibah ka, tumhe yaad ho ke na yaad ho\nWoh naye gile, woh shikayatein, woh maze maze ki hikayatein\nWoh har ek baat pe roothna, tumhe yaad ho ke na yaad ho",
+    "sher_urdu": "\u0648\u06c1 \u062c\u0648 \u06c1\u0645 \u0645\u06cc\u06ba \u062a\u0645 \u0645\u06cc\u06ba \u0642\u0631\u0627\u0631 \u062a\u06be\u0627\u060c \u062a\u0645\u06c1\u06cc\u06ba \u06cc\u0627\u062f \u06c1\u0648 \u06a9\u06c1 \u0646\u06c1 \u06cc\u0627\u062f \u06c1\u0648\n\u0648\u06c1\u06cc \u06cc\u0639\u0646\u06cc \u0648\u0639\u062f\u06c1 \u0646\u0628\u0627\u06c1 \u06a9\u0627\u060c \u062a\u0645\u06c1\u06cc\u06ba \u06cc\u0627\u062f \u06c1\u0648 \u06a9\u06c1 \u0646\u06c1 \u06cc\u0627\u062f \u06c1\u0648\n\u0648\u06c1 \u0646\u0626\u06d2 \u06af\u0650\u0644\u06d2\u060c \u0648\u06c1 \u0634\u06a9\u0627\u06cc\u062a\u06cc\u06ba\u060c \u0648\u06c1 \u0645\u0632\u06d2 \u0645\u0632\u06d2 \u06a9\u06cc \u062d\u06a9\u0627\u06cc\u062a\u06cc\u06ba\n\u0648\u06c1 \u06c1\u0631 \u0627\u06a9 \u0628\u0627\u062a \u067e\u06c1 \u0631\u0648\u0679\u06be\u0646\u0627\u060c \u062a\u0645\u06c1\u06cc\u06ba \u06cc\u0627\u062f \u06c1\u0648 \u06a9\u06c1 \u0646\u06c1 \u06cc\u0627\u062f \u06c1\u0648",
+    "english_translation": "Do you recall the vows of peace, the sweet complaints, and every playful sulk we shared, or have they faded from your memory?",
+    "source": "Diwan-e-Momin",
+    "emotion": "yaad",
+    "bg_color": "#1A0A33",
+    "text_color": "#E0E0E0",
+    "accent_color": "#AA66BB",
+    "format": "four-liner",
+    "caption": "There's a quiet ache in asking, 'Do you remember?' when you already know the answer.\nMomin, known for his unique lyrical style, poured his heart into verses that felt intensely personal. It\u2019s said that this particular ghazal stemmed from a deep personal attachment, a relationship that left an indelible mark on his soul, making the yearning palpable even centuries later.\n\nMore gems from the same ghazal:\nKabhi hum mein tum mein bhi chaah thi, kabhi hum se tum se bhi raah thi\nKabhi hum bhi tum bhi the aashna, tumhe yaad ho ke na yaad ho\n\nSuni hai kehte hain aakhirash, yeh Momin us se mila tha kash\nWoh dil ka dard mita tha kash, tumhe yaad ho ke na yaad ho\n\nKise tag karoge jo yeh dard samajhta ho?",
+    "extra_hashtags": [
+      "MominKhanMomin",
+      "UrduPoetry",
+      "Shayari",
+      "Yaad",
+      "Nostalgia",
+      "Ishq",
+      "ForgottenLove",
+      "ClassicalUrdu",
+      "Ghazal",
+      "Rekhta",
+      "Momin"
+    ]
+  }
 }
