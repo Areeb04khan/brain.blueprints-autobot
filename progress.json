@@ -1,24 +1,8 @@
 {
   "poet_index": 8,
-  "total_posts": 21,
+  "total_posts": 22,
   "last_post_date": "2026-04-07",
-  "last_post_type": "photo",
+  "last_post_type": "reel",
   "status": "success",
-  "today_content": {
-    "sher_roman": "Hazaar baar kiya tark-e-ishq par na hua,\nHazaaron baar yahi dil idhar udhar na hua.\n\nGiraftaar-e-gham-e-ishq ho gaya hai woh dil,\nJo zindagi mein kabhi be-safar na hua.",
-    "sher_urdu": "\u06c1\u0632\u0627\u0631 \u0628\u0627\u0631 \u06a9\u06cc\u0627 \u062a\u0631\u06a9\u0650 \u0639\u0634\u0642 \u067e\u0631 \u0646\u06c1 \u06c1\u0648\u0627\n\u06c1\u0632\u0627\u0631\u0648\u06ba \u0628\u0627\u0631 \u06cc\u06c1\u06cc \u062f\u0644 \u0627\u062f\u06be\u0631 \u0627\u064f\u062f\u06be\u0631 \u0646\u06c1 \u06c1\u0648\u0627\n\n\u06af\u0631\u0641\u062a\u0627\u0631\u0650 \u063a\u0645\u0650 \u0639\u0634\u0642 \u06c1\u0648 \u06af\u06cc\u0627 \u06c1\u06d2 \u0648\u06c1 \u062f\u0644\n\u062c\u0648 \u0632\u0646\u062f\u06af\u06cc \u0645\u06cc\u06ba \u06a9\u0628\u06be\u06cc \u0628\u06d2 \u0633\u0641\u0631 \u0646\u06c1 \u06c1\u0648\u0627",
-    "english_translation": "Despite a thousand attempts to forsake love, this unwavering heart, once boundless, now finds itself captive to love's sorrow.",
-    "source": "From a ghazal by Dagh Dehlvi",
-    "emotion": "ishq",
-    "bg_color": "#3D0000",
-    "text_color": "#F0E68C",
-    "accent_color": "#00FFFF",
-    "format": "four-liner",
-    "caption": "Kya sirf keh dene se ishq choot jata hai? Dagh Dehlvi, jiski shayari mein aksar ek anokhi shokhi aur roshni nazar aati hai, woh bhi ishq ke gehre dardon se be-khabar na the. Unka apna dil, jise zindagi ne kayi safar karwaye, Delhi se Rampur aur Hyderabad tak, woh bhi jab ishq ke gham mein giraftaar hua toh phir kisi aur simt na ja saka. Yeh sher us dil ki dastaan hai jo baar-baar tark-e-ishq ki koshish ke bawajood, apni mohabbat se door na ho saka.\n\nIsi ghazal ke chand aur ashaar mulaiza farmaiye:\n\n**Ek aur sher:**\nTujhe jafa ka na ho iltifaat, aie zaalim!\nMagar Khuda ki kasam, mujh se sabr par na hua.\n\n**Maqta:**\nFana ki had se bhi aage guzar gaya Dagh,\nJo ishq mein kabhi apne se bekhabar na hua.\n\nKise tag karoge jo yeh dard samajhta ho?",
-    "extra_hashtags": [
-      "DaghDehlvi",
-      "UrduShayari",
-      "IshqAurDard"
-    ]
-  }
+  "today_content": null
 }
