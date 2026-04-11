@@ -1,32 +1,8 @@
 {
   "poet_index": 9,
-  "total_posts": 25,
+  "total_posts": 26,
   "last_post_date": "2026-04-11",
-  "last_post_type": "photo",
+  "last_post_type": "reel",
   "status": "success",
-  "today_content": {
-    "sher_roman": "Sarakti jaye hai rukh se naqaab ahista ahista\nNikalta aa raha hai aaftaab ahista ahista\n\nWo be-pardah agar deewarein bhi sun lein to mar jaayen\nQayamat ho rahi hai be-hijab ahista ahista\n\nJawaan hone lage jab woh, to hum se kar liya parda\nHue woh aur hi kuchh be-naqaab ahista ahista",
-    "sher_urdu": "\u0633\u0631\u06a9\u062a\u06cc \u062c\u0627\u0626\u06d2 \u06c1\u06d2 \u0631\u064f\u062e \u0633\u06d2 \u0646\u0642\u0627\u0628 \u0622\u06c1\u0633\u062a\u06c1 \u0622\u06c1\u0633\u062a\u06c1\n\u0646\u06a9\u0644\u062a\u0627 \u0622 \u0631\u06c1\u0627 \u06c1\u06d2 \u0622\u0641\u062a\u0627\u0628 \u0622\u06c1\u0633\u062a\u06c1 \u0622\u06c1\u0633\u062a\u06c1\n\n\u0648\u06c1 \u0628\u06d2 \u067e\u0631\u062f\u06c1 \u0627\u06af\u0631 \u062f\u06cc\u0648\u0627\u0631\u06cc\u06ba \u0628\u06be\u06cc \u0633\u0646 \u0644\u06cc\u06ba \u062a\u0648 \u0645\u0631 \u062c\u0627\u0626\u06cc\u06ba\n\u0642\u06cc\u0627\u0645\u062a \u06c1\u0648 \u0631\u06c1\u06cc \u06c1\u06d2 \u0628\u06d2 \u062d\u062c\u0627\u0628 \u0622\u06c1\u0633\u062a\u06c1 \u0622\u06c1\u0633\u062a\u06c1\n\n\u062c\u0648\u0627\u06ba \u06c1\u0648\u0646\u06d2 \u0644\u06af\u06d2 \u062c\u0628 \u0648\u06c1 \u062a\u0648 \u06c1\u0645 \u0633\u06d2 \u06a9\u0631 \u0644\u06cc\u0627 \u067e\u0631\u062f\u06c1\n\u06c1\u0648\u0626\u06d2 \u0648\u06c1 \u0627\u0648\u0631 \u06c1\u06cc \u06a9\u0686\u06be \u0628\u06d2 \u0646\u0642\u0627\u0628 \u0622\u06c1\u0633\u062a\u06c1 \u0622\u06c1\u0633\u062a\u06c1",
-    "english_translation": "With every gentle slip of the veil, her radiant face, like a rising sun, slowly unveils a silent, captivating tale.",
-    "source": "Deewan-e-Amir Minai",
-    "emotion": "ishq",
-    "bg_color": "#1A0A33",
-    "text_color": "#F0EAD6",
-    "accent_color": "#E6A8D7",
-    "format": "longer",
-    "caption": "Har ada mein chhupi ek nayi duniya, aur har ghoonghat mein lipti ek qayamat... \nAmir Minai, jinhe Lucknow ki zubaan aur adab par kamaal haasil tha, aksar apne ishqana kalaam mein bhi ek roohaniyat ka rang bhar dete the. Yeh nazakat, unke sher o shayari mein mehboob ke husn ko aahista aahista be-naqaab karte hue, is duniya se pare ki khoobsurti ka ehsaas dilati hai.\n\nAur bhi ash'aar isi ghazal se:\nHamare aur tumhare pyar mein bas farq itna hai\nIdhar to be-qaraari hai, udhar hai khwab ahista ahista\n\nWo badla unki aankhon ka mere dil par asar dekho\nKe meri zindagi hoti kharab ahista ahista\n\nKaun sa lafz sabse zyada dil ko chhu gaya?",
-    "extra_hashtags": [
-      "AmirMinai",
-      "UrduPoetry",
-      "Shayari",
-      "Ishq",
-      "Ghazal",
-      "ClassicalPoetry",
-      "PoetryCommunity",
-      "Rekhta",
-      "SufiPoetry",
-      "LucknowShayari",
-      "DilKiBaat"
-    ]
-  }
+  "today_content": null
 }
