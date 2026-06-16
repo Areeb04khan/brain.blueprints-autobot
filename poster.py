@@ -15,9 +15,9 @@ FIXES in v4.2:
    due to GitHub Actions queue delays). Each cron trigger now sets POST_TYPE
    explicitly in the workflow via separate jobs. Clock detection removed entirely.
 3. Format updated — "one-liner" renamed to "four-liner" everywhere (prompt + map).
-"""
 
-f rom google import genai
+
+from google import genai
 import requests
 import json
 import os
@@ -978,3 +978,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""
