@@ -17,7 +17,7 @@ FIXES in v4.2:
 3. Format updated — "one-liner" renamed to "four-liner" everywhere (prompt + map).
 """
 
-from google import genai
+f rom google import genai
 import requests
 import json
 import os
