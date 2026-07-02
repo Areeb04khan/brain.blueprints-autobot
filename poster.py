@@ -792,9 +792,10 @@ def build_caption(data: dict, poet: dict) -> str:
 # PROGRESS TRACKING — persisted in progress.json (committed to repo)
 # ============================================================
 def load_progress() -> dict:
-    """
-    Loads progress.json. If file does not exist (fresh clone), returns defaults.
-    setdefault() ensures old progress.json files without new fields still work.
+    """Load progress.json and return default progress if it does not exist.
+
+    This also sets default values for any missing progress fields so older
+    progress.json files are still compatible.
     """
     if os.path.exists("progress.json"):
         with open("progress.json") as f:
