@@ -1,0 +1,35 @@
+Please perform a complete code audit and optimization of this repository. We have two main objectives: resolving syntax/typo issues across all files, and implementing a set of critical actionable improvements. 
+
+Here is exactly what needs to be done:
+
+1. GLOBAL SYNTAX & TYPO AUDIT
+- Review all files in the repository for unescaped string literals, stray apostrophes (like the one that broke "Instagram's" on line 668), unclosed quotes, or bad markdown characters that cause Python SyntaxErrors. Fix them immediately.
+
+2. CRITICAL ACTIONABLE RECOMMENDATIONS (Implement in order of priority):
+
+🔴 URGENT: Audit for Secrets
+- Manually check all files for hardcoded API keys, passwords, tokens, or webhook URLs. If any are found, strip them out immediately and replace them with `os.environ.get('VARIABLE_NAME')`. 
+
+🔴 URGENT: Add Environment Templates & Configuration
+- Create a `.env.example` file listing all required environment variables needed to run this bot (e.g., tokens, API keys).
+- Update the README.md to explain how a new user should duplicate this file to a `.env` file and set up their keys.
+
+🟠 HIGH PRIORITY: Shayari Sourcing & Basic Filtering
+- Create an `ATTRIBUTION.md` or add clear code documentation clarifying where the Shayari content is sourced from.
+- Implement a lightweight, basic profanity filtering function to screen Shayari text before processing to avoid potential platform bans.
+
+🟠 HIGH PRIORITY: Error Handling & Robust Logging
+- Review core API calls, file operations, and platform posting functions. Wrap them in clean `try/except` blocks.
+- Replace basic `print()` statements used for tracking with Python's standard `logging` library (`logging.info()`, `logging.error()`) to improve debugging.
+
+🟡 MEDIUM PRIORITY: Modularize Shayari Data
+- If Shayari content is currently hardcoded as massive arrays inside the Python scripts, extract it entirely. Move it into a clean, external `shayari_data.json` or a lightweight SQLite database structure so the content can be updated without modifying core logic.
+
+🟡 MEDIUM PRIORITY: Project Licensing & Onboarding
+- Generate a standard open-source `LICENSE` file (e.g., MIT License).
+- Create a basic `CONTRIBUTING.md` guide to build community trust and establish contribution rules.
+
+🟢 LOW PRIORITY: Testing Setup
+- Implement a basic testing framework using `pytest`. Write 2-3 sample tests checking core logic (like testing the Shayari fetching or filtering code) to prevent future code regressions.
+
+Please process these changes cleanly and update the relevant files.
