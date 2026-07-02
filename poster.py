@@ -15,7 +15,7 @@ FIXES in v4.2:
    due to GitHub Actions queue delays). Each cron trigger now sets POST_TYPE
    explicitly in the workflow via separate jobs. Clock detection removed entirely.
 3. Format updated — "one-liner" renamed to "four-liner" everywhere (prompt + map).
-
+"""
 
 from google import genai
 import requests
@@ -161,12 +161,12 @@ POET_SCHEDULE = [
     {"name": "Seemab Akbarabadi",     "era": "1882-1951"},  # prolific ghazals
     {"name": "Jigarr Badayuni",       "era": "1880-1940"},  # mystical obscure
     {"name": "Himayat Ali Shair",     "era": "1926-2011"},  # Pakistani modernist
-    {"name": "A modernist
     {"name": "Ahmad Mushtaq",         "era": "1934-"    },  # quiet genius
     {"name": "Zafar Iqbal",           "era": "1933-"    },  # experimental ghazal
     {"name": "Shahryar",              "era": "1936-2012"},  # Umrao Jaan, Gaman
     {"name": "Jamiluddin Aali",       "era": "1926-2015"},  # Jeevey Jeevey Pak
-    {"name": "Sufi Tabassum",         "era": "1899-1978"},  # children + deep Urdu]
+    {"name": "Sufi Tabassum",         "era": "1899-1978"},  # children + deep Urdu
+]
 
 # ============================================================
 # FORMAT SELECTION — weighted random per run
@@ -757,7 +757,7 @@ def post_photo(image_url: str, caption: str) -> bool:
         }
     ).json()
     if "id" not in container:
-        print(f"� Container failed: {container}")
+        print(f"❌ Container failed: {container}")
         return False
     print(f"✅ Container: {container['id']}")
     time.sleep(5)  # Brief wait before publishing
@@ -771,7 +771,7 @@ def post_photo(image_url: str, caption: str) -> bool:
     if "id" in publish:
         print(f"🎉 Photo posted! ID: {publish['id']}")
         return True
-    print(f"� Publish failed: {publish}")
+    print(f"❌ Publish failed: {publish}")
     return False
 
 
@@ -793,7 +793,7 @@ def build_caption(data: dict, poet: dict) -> str:
 # ============================================================
 def load_progress() -> dict:
     """
-    Loads progress.json. If file doesn't exist (fresh clone), returns defaults.
+    Loads progress.json. If file does not exist (fresh clone), returns defaults.
     setdefault() ensures old progress.json files without new fields still work.
     """
     if os.path.exists("progress.json"):
@@ -851,7 +851,7 @@ def run():
     # This prevents Gemini generating a different sher for the reel.
     # Photo saves "today_content" to progress.json after posting.
     # Reel loads it: same sher, same caption, different visual (9:16 vs 1:1).
-    # Fallback: if POST_TYPE == "reel" and p.get("today_content"):
+    if POST_TYPE == "reel" and p.get("today_content"):
         print("Loading today's sher from photo post (reusing for reel)...")
         data = p["today_content"]
     else:
