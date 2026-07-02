@@ -161,6 +161,7 @@ POET_SCHEDULE = [
     {"name": "Seemab Akbarabadi",     "era": "1882-1951"},  # prolific ghazals
     {"name": "Jigarr Badayuni",       "era": "1880-1940"},  # mystical obscure
     {"name": "Himayat Ali Shair",     "era": "1926-2011"},  # Pakistani modernist
+    {"name": "A modernist
     {"name": "Ahmad Mushtaq",         "era": "1934-"    },  # quiet genius
     {"name": "Zafar Iqbal",           "era": "1933-"    },  # experimental ghazal
     {"name": "Shahryar",              "era": "1936-2012"},  # Umrao Jaan, Gaman
@@ -548,7 +549,7 @@ def generate_tts(text: str, output_path: str) -> bool:
     """
     FIX: Now receives sher_urdu (Urdu script) instead of sher_roman.
     Edge TTS pronounces Urdu script far more accurately than Roman transliteration.
-    Voice: ur-PK-AsadNeural — male Urdu voice, -15% rate for poetry pacing.
+    Voice: ur-PK-AsadNeural - male Urdu voice, -15% rate for poetry pacing.
     """
     try:
         import asyncio
@@ -770,7 +771,7 @@ def post_photo(image_url: str, caption: str) -> bool:
     if "id" in publish:
         print(f"🎉 Photo posted! ID: {publish['id']}")
         return True
-    print(f"❌ Publish failed: {publish}")
+    print(f"� Publish failed: {publish}")
     return False
 
 
