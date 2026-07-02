@@ -193,8 +193,7 @@ def get_format(_day=None):
 # bg=background, text=sher text, accent=highlights, sub=secondary, border=frame
 # ============================================================
 EMOTION_PALETTES = {
-    "ishq":     {"bg":"#1a0010","f5c6d0","e8587a","b03060","8b1a3a"},
-    "1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060","border":"#8b1a3a"},
+    "ishq":     {"bg":"#1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060","border":"#8b1a3a"},
     "dard":     {"bg":"#0a0a1a","text":"#c8d4e8","accent":"#7090d0","sub":"#405080","border":"#2a3a6a"},
     "tanhai":   {"bg":"#060d0d","text":"#b8d8d8","accent":"#40a0a0","sub":"#206060","border":"#104040"},
     "intezaar": {"bg":"#0f0f0f","text":"#e0d8c8","accent":"#c8a860","sub":"#806030","border":"#503810"},
