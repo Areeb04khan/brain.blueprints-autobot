@@ -639,9 +639,9 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
 
 # ============================================================
 # STEP 6: Upload image to catbox.moe (photos — same host as reels)
-# FIX: imgbb URLs were being rejected by Instagram's servers with error 9004
+# FIX: imgbb URLs were being rejected by Instagram servers with error 9004
 # ("media could not be fetched"). catbox.moe works reliably for both
-# photos and videos with Instagram's Graph API.
+# photos and videos with Instagram Graph API.
 # IMGBB_API_KEY secret is no longer needed but harmless to keep.
 # ============================================================
 def upload_image(path: str) -> str:
@@ -665,7 +665,7 @@ def upload_image(path: str) -> str:
 def upload_video_to_catbox(video_path: str) -> str:
     """
     Uploads MP4 to catbox.moe (free, anonymous) and returns public HTTPS URL.
-    Instagram's Graph API requires a publicly accessible video URL.
+    Instagram Graph API requires a publicly accessible video URL.
     """
     with open(video_path,"rb") as f:
         result = requests.post(
