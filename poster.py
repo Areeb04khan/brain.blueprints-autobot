@@ -165,8 +165,7 @@ POET_SCHEDULE = [
     {"name": "Zafar Iqbal",           "era": "1933-"    },  # experimental ghazal
     {"name": "Shahryar",              "era": "1936-2012"},  # Umrao Jaan, Gaman
     {"name": "Jamiluddin Aali",       "era": "1926-2015"},  # Jeevey Jeevey Pak
-    {"name": "Sufi Tabassum",         "era": "1899-1978"},  # children + deep Urdu
-]
+    {"name": "Sufi Tabassum",         "era": "1899-1978"},  # children + deep Urdu]
 
 # ============================================================
 # FORMAT SELECTION — weighted random per run
@@ -194,7 +193,8 @@ def get_format(_day=None):
 # bg=background, text=sher text, accent=highlights, sub=secondary, border=frame
 # ============================================================
 EMOTION_PALETTES = {
-    "ishq":     {"bg":"#1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060","border":"#8b1a3a"},
+    "ishq":     {"bg":"#1a0010","f5c6d0","e8587a","b03060","8b1a3a"},
+    "1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060","border":"#8b1a3a"},
     "dard":     {"bg":"#0a0a1a","text":"#c8d4e8","accent":"#7090d0","sub":"#405080","border":"#2a3a6a"},
     "tanhai":   {"bg":"#060d0d","text":"#b8d8d8","accent":"#40a0a0","sub":"#206060","border":"#104040"},
     "intezaar": {"bg":"#0f0f0f","text":"#e0d8c8","accent":"#c8a860","sub":"#806030","border":"#503810"},
@@ -755,7 +755,7 @@ def post_photo(image_url: str, caption: str) -> bool:
         }
     ).json()
     if "id" not in container:
-        print(f"❌ Container failed: {container}")
+        print(f"� Container failed: {container}")
         return False
     print(f"✅ Container: {container['id']}")
     time.sleep(5)  # Brief wait before publishing
@@ -849,8 +849,7 @@ def run():
     # This prevents Gemini generating a different sher for the reel.
     # Photo saves "today_content" to progress.json after posting.
     # Reel loads it: same sher, same caption, different visual (9:16 vs 1:1).
-    # Fallback: if today_content missing, generate fresh (reel triggered manually).
-    if POST_TYPE == "reel" and p.get("today_content"):
+    # Fallback: if POST_TYPE == "reel" and p.get("today_content"):
         print("Loading today's sher from photo post (reusing for reel)...")
         data = p["today_content"]
     else:
@@ -978,4 +977,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
