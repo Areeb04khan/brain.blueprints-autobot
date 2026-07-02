@@ -326,7 +326,7 @@ def draw_border(draw, p, W, H):
         draw.ellipse([mx-4,my-4,mx+4,my+4], fill=p["border"])
 
 def draw_divider(draw, cx, cy, color, w=100):
-    """Horizontal lines with a central diamond — used between sher and translation."""
+    """Horizontal lines with a central diamond used between sher and translation."""
     draw.line([(cx-w,cy),(cx-14,cy)], fill=color, width=1)
     draw.line([(cx+14,cy),(cx+w,cy)], fill=color, width=1)
     s=7
