@@ -252,52 +252,54 @@ def generate_content(poet: dict, fmt: str) -> dict:
     client      = genai.Client(api_key=GEMINI_API_KEY)
     tag_trigger = TAG_TRIGGERS[_random.randint(0, len(TAG_TRIGGERS)-1)]
 
-    prompt = f"""You run a premium Instagram Shayari account dedicating 30 days to one poet.
-Today's poet: {poet['name']} ({poet['era']})
-
-RULES:
-1. Quote a REAL, AUTHENTIC sher by {poet['name']} — NOT AI generated, NOT paraphrased.
-   It must be verifiable — from a known diwan, collection, or mushaira recording.
-2. Format today: {fmt}
-   one-liner  = 1 misra ONLY — use this ONLY if the line is completely self-sufficient
-                and iconic on its own. Do NOT force it for ordinary lines.
-   four-liner = exactly 4 lines (2 back-to-back couplets from the same ghazal)
-   couplet    = exactly 2 lines (one complete sher)
-   longer     = 6-8 lines from a real ghazal/nazm (3-4 connected couplets)
-   IMAGE RULE: Total Roman Urdu lines must stay under 8. If the sher is longer,
-               pick a shorter extract. Do NOT let text overflow the image.
-3. Roman Urdu transliteration of the sher only (for sher_roman)
-4. Urdu script of the sher (for sher_urdu — used for TTS pronunciation)
-5. English translation: MAX 1 LINE. Poetic, not literal.
-6. Source collection if known (e.g. Diwan-e-Ghalib)
-
-EMOTION: pick one from [ishq, dard, intezaar, yaad, tanhai, gussa, falsafa, umeed, zindagi, maut]
-
-COLORS (dark backgrounds only):
-bg_color: very dark hex matching emotion
-text_color: soft light hex
-accent_color: vivid accent hex
-
-CAPTION:
-Line 1 - HOOK: Start mid-thought, never start with poet name. Instant curiosity.
-Line 2-3 - STORY: Real intimate fact about poet's life tied to this sher.
-Line 4 - GHAZAL: If from ghazal, include 2-3 more real couplets labeled clearly.
-Line 5 - TAG TRIGGER (copy exactly): "{tag_trigger}"
-
-Return ONLY valid JSON, no markdown, no backticks:
-{{
-  "sher_roman": "...",
-  "sher_urdu": "...",
-  "english_translation": "...",
-  "source": "...",
-  "emotion": "...",
-  "bg_color": "#...",
-  "text_color": "#...",
-  "accent_color": "#...",
-  "format": "{fmt}",
-  "caption": "...",
-  "extra_hashtags": ["tag1","tag2","tag3"]
-}}"""
+    prompt = (
+        "You run a premium Instagram Shayari account dedicating 30 days to one poet.\n"
+        "Today's poet: {poet_name} ({poet_era})\n\n"
+        "RULES:\n"
+        "1. Quote a REAL, AUTHENTIC sher by {poet_name} — NOT AI generated, NOT paraphrased.\n"
+        "   It must be verifiable — from a known diwan, collection, or mushaira recording.\n"
+        "2. Format today: {fmt}\n"
+        "   one-liner  = 1 misra ONLY — use this ONLY if the line is completely self-sufficient\n"
+        "                and iconic on its own. Do NOT force it for ordinary lines.\n"
+        "   four-liner = exactly 4 lines (2 back-to-back couplets from the same ghazal)\n"
+        "   couplet    = exactly 2 lines (one complete sher)\n"
+        "   longer     = 6-8 lines from a real ghazal/nazm (3-4 connected couplets)\n"
+        "   IMAGE RULE: Total Roman Urdu lines must stay under 8. If the sher is longer,\n"
+        "               pick a shorter extract. Do NOT let text overflow the image.\n"
+        "3. Roman Urdu transliteration of the sher only (for sher_roman)\n"
+        "4. Urdu script of the sher (for sher_urdu — used for TTS pronunciation)\n"
+        "5. English translation: MAX 1 LINE. Poetic, not literal.\n"
+        "6. Source collection if known (e.g. Diwan-e-Ghalib)\n\n"
+        "EMOTION: pick one from [ishq, dard, intezaar, yaad, tanhai, gussa, falsafa, umeed, zindagi, maut]\n\n"
+        "COLORS (dark backgrounds only):\n"
+        "bg_color: very dark hex matching emotion\n"
+        "text_color: soft light hex\n"
+        "accent_color: vivid accent hex\n\n"
+        "CAPTION:\n"
+        "Line 1 - HOOK: Start mid-thought, never start with poet name. Instant curiosity.\n"
+        "Line 2-3 - STORY: Real intimate fact about poet's life tied to this sher.\n"
+        "Line 4 - GHAZAL: If from ghazal, include 2-3 more real couplets labeled clearly.\n"
+        "Line 5 - TAG TRIGGER (copy exactly): \"{tag_trigger}\"\n\n"
+        "Return ONLY valid JSON, no markdown, no backticks:\n"
+        "{{\n"
+        "  \"sher_roman\": \"...\",\n"
+        "  \"sher_urdu\": \"...\",\n"
+        "  \"english_translation\": \"...\",\n"
+        "  \"source\": \"...\",\n"
+        "  \"emotion\": \"...\",\n"
+        "  \"bg_color\": \"#...\",\n"
+        "  \"text_color\": \"#...\",\n"
+        "  \"accent_color\": \"#...\",\n"
+        "  \"format\": \"{fmt}\",\n"
+        "  \"caption\": \"...\",\n"
+        "  \"extra_hashtags\": [\"tag1\",\"tag2\",\"tag3\"]\n"
+        "}}"
+    ).format(
+        poet_name=poet['name'],
+        poet_era=poet['era'],
+        fmt=fmt,
+        tag_trigger=tag_trigger
+    )
 
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
     # Strip any markdown code fences Gemini might wrap around JSON
