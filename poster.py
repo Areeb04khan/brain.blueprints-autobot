@@ -29,6 +29,7 @@ import random
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import base64
+from urllib.parse import urlparse
 
 # How many times to retry on transient failures before giving up.
 # Keep retries short in GitHub Actions so failures finish with a clear status.
@@ -51,6 +52,8 @@ GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 CATBOX_USERHASH        = os.environ.get("CATBOX_USERHASH", "")
+MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
+CLOUDINARY_URL         = os.environ.get("CLOUDINARY_URL", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
 IG_HANDLE              = "@ak_apak"
 
@@ -77,6 +80,17 @@ def catbox_form_data() -> dict:
 CATBOX_HEADERS = {
     "User-Agent": "shayari-bot/1.0 (+https://github.com)",
 }
+
+
+def cloudinary_credentials():
+    if not CLOUDINARY_URL:
+        raise RuntimeError("MEDIA_HOST=cloudinary requires CLOUDINARY_URL secret")
+
+    parsed = urlparse(CLOUDINARY_URL)
+    if parsed.scheme != "cloudinary" or not parsed.username or not parsed.password or not parsed.hostname:
+        raise RuntimeError("CLOUDINARY_URL must look like cloudinary://api_key:api_secret@cloud_name")
+
+    return parsed.hostname, parsed.username, parsed.password
 
 
 # DejaVu fonts - installed via apt-get in the workflow
@@ -670,63 +684,108 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
 
 
 # ============================================================
-# STEP 6: Upload image to catbox.moe (photos - same host as reels)
-# FIX: imgbb URLs were being rejected by Instagram servers with error 9004
-# ("media could not be fetched"). catbox.moe works reliably for both
-# photos and videos with Instagram Graph API.
+# STEP 6: Upload generated media to a public host for Instagram
 # ============================================================
-def upload_image(path: str) -> str:
-    """Uploads JPEG to catbox.moe and returns public URL for Instagram API."""
+def upload_to_tempfile(path: str, timeout: int) -> str:
+    """Uploads media to TempFile.org and returns a direct download URL."""
+    with open(path, "rb") as f:
+        result = requests.post(
+            "https://tempfile.org/api/upload/local",
+            files={"files": (os.path.basename(path), f)},
+            data={"expiryHours": "48"},
+            timeout=timeout
+        )
+
+    try:
+        payload = result.json()
+    except ValueError:
+        raise Exception(f"tempfile upload failed: {result.text}")
+
+    if payload.get("success") and payload.get("files"):
+        info_url = payload["files"][0]["url"].rstrip("/")
+        url = f"{info_url}/download"
+        print(f"OK Media hosted on TempFile: {url}")
+        return url
+
+    raise Exception(f"tempfile upload failed: {payload}")
+
+
+def upload_to_cloudinary(path: str, resource_type: str, timeout: int) -> str:
+    """Uploads media to Cloudinary and returns a durable HTTPS CDN URL."""
+    cloud_name, api_key, api_secret = cloudinary_credentials()
+    endpoint = f"https://api.cloudinary.com/v1_1/{cloud_name}/{resource_type}/upload"
+
+    with open(path, "rb") as f:
+        result = requests.post(
+            endpoint,
+            files={"file": f},
+            data={"folder": "shayari-bot"},
+            auth=(api_key, api_secret),
+            timeout=timeout
+        )
+
+    try:
+        payload = result.json()
+    except ValueError:
+        raise Exception(f"cloudinary upload failed: {result.text}")
+
+    if result.ok and payload.get("secure_url"):
+        print(f"OK Media hosted on Cloudinary: {payload['secure_url']}")
+        return payload["secure_url"]
+
+    raise Exception(f"cloudinary upload failed: {payload}")
+
+
+def upload_to_catbox(path: str, timeout: int) -> str:
+    """Uploads media to Catbox when explicitly selected."""
     with open(path, "rb") as f:
         result = requests.post(
             "https://catbox.moe/user/api.php",
             data=catbox_form_data(),
             files={"fileToUpload": f},
             headers=CATBOX_HEADERS,
-            timeout=60
+            timeout=timeout
         )
     url = result.text.strip()
     if url.startswith("https://"):
-        print(f"OK Photo hosted: {url}")
+        print(f"OK Media hosted on Catbox: {url}")
         return url
     raise Exception(f"catbox upload failed: {result.text}")
 
 
-# ============================================================
-# STEP 7: Upload video to catbox.moe + post as Instagram Reel
-# ============================================================
-def upload_video_to_catbox(video_path: str) -> str:
+def upload_public_media(path: str, resource_type: str) -> str:
     """
-    Uploads MP4 to catbox.moe (free, anonymous) and returns public HTTPS URL.
-    Instagram Graph API requires a publicly accessible video URL.
+    Returns a public HTTPS media URL for Instagram Graph API.
+    MEDIA_HOST options: tempfile (default), cloudinary, catbox.
     """
-    with open(video_path,"rb") as f:
-        result = requests.post(
-            "https://catbox.moe/user/api.php",
-            data=catbox_form_data(),
-            files={"fileToUpload": f},
-            headers=CATBOX_HEADERS,
-            timeout=180
-        )
-    url = result.text.strip()
-    if url.startswith("https://"):
-        print(f"OK Video hosted: {url}")
-        return url
-    raise Exception(f"catbox upload failed: {result.text}")
+    timeout = 180 if resource_type == "video" else 60
+
+    if MEDIA_HOST == "cloudinary":
+        return upload_to_cloudinary(path, resource_type, timeout)
+    if MEDIA_HOST == "catbox":
+        return upload_to_catbox(path, timeout)
+    if MEDIA_HOST == "tempfile":
+        return upload_to_tempfile(path, timeout)
+
+    raise RuntimeError("MEDIA_HOST must be one of: tempfile, cloudinary, catbox")
+
+
+def upload_image(path: str) -> str:
+    return upload_public_media(path, "image")
 
 
 def upload_video_to_instagram(video_path: str, caption: str) -> bool:
     """
     3-step Instagram Reels upload with improved error handling:
-    1. Upload MP4 to catbox.moe for public URL
+    1. Upload MP4 to the configured media host for a public URL
     2. Create media container (Instagram processes video asynchronously)
     3. Poll for FINISHED status with timeout, then publish
     
     FIX (v4.2.1): Added explicit timeout logic, better error messages,
     and early exit if video processing fails or takes too long.
     """
-    print("☁️  Uploading video to catbox.moe...")
-    video_url = upload_video_to_catbox(video_path)
+    print(f"☁️  Uploading video via {MEDIA_HOST}...")
+    video_url = upload_public_media(video_path, "video")
 
     # Step 1: Create Reels media container
     # EXPLANATION: First, we create a container on Instagram that will hold our video
