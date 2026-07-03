@@ -44,7 +44,7 @@ def is_retryable_error(e):
     ])
 
 # ============================================================
-# CONFIGURATION — all values come from GitHub Actions secrets
+# CONFIGURATION - all values come from GitHub Actions secrets
 # ============================================================
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
@@ -53,20 +53,20 @@ IMGBB_API_KEY          = os.environ.get("IMGBB_API_KEY", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
 IG_HANDLE              = "@ak_apak"
 
-# DejaVu fonts — installed via apt-get in the workflow
+# DejaVu fonts - installed via apt-get in the workflow
 FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
 FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ============================================================
-# POET SCHEDULE — 30 days per poet, cycles through all poets
+# POET SCHEDULE - 30 days per poet, cycles through all poets
 # ============================================================
 # ============================================================
-# POET SCHEDULE — 1 poet per day, cycles through entire list
+# POET SCHEDULE - 1 poet per day, cycles through entire list
 # Mix of prominent (for traction) + lesser-known (for discovery)
 # Categories: Classical Urdu, Freedom era, Bollywood, Modern,
 #             Hindi poets, and obscure/rare voices
-# Add new poets freely at the bottom — the bot picks up automatically
+# Add new poets freely at the bottom - the bot picks up automatically
 # ============================================================
 POET_SCHEDULE = [
     # ── CLASSICAL URDU (pre-1900) ──────────────────────────────
@@ -170,19 +170,19 @@ POET_SCHEDULE = [
 ]
 
 # ============================================================
-# FORMAT SELECTION — weighted random per run
+# FORMAT SELECTION - weighted random per run
 # Bias: four-liner (40%) and longer (35%) dominate.
 # Couplet (20%) occasional. One-liner (5%) only for truly
 # self-sufficient, iconic single-line shers.
-# No FORMAT_MAP needed — format picked fresh each run.
+# No FORMAT_MAP needed - format picked fresh each run.
 # ============================================================
 import random as _random
 
 FORMAT_WEIGHTS = [
-    ("four-liner", 40),  # 4 lines — most common, fits image well
+    ("four-liner", 40),  # 4 lines - most common, fits image well
     ("longer",     35),  # 6-8 lines from a real ghazal/nazm
-    ("couplet",    20),  # 2 lines — used occasionally
-    ("one-liner",   5),  # 1 misra — ONLY for iconic self-sufficient lines
+    ("couplet",    20),  # 2 lines - used occasionally
+    ("one-liner",   5),  # 1 misra - ONLY for iconic self-sufficient lines
 ]
 
 def get_format(_day=None):
@@ -191,7 +191,7 @@ def get_format(_day=None):
     return _random.choices(formats, weights=weights, k=1)[0]
 
 # ============================================================
-# EMOTION → DARK COLOR PALETTES
+# EMOTION -> DARK COLOR PALETTES
 # bg=background, text=sher text, accent=highlights, sub=secondary, border=frame
 # ============================================================
 EMOTION_PALETTES = {
@@ -243,7 +243,7 @@ TAG_TRIGGERS = [
     "Pehli baar padhke kya feel hua? Comments mein batao.",
     "Yeh sher kisi ko dedicate karna chahte ho?",
     "Kaun sa lafz sabse zyada dil ko chhu gaya?",
-    "Aaj ke waqt mein bhi kitna sach lagta hai — sochna.",
+    "Aaj ke waqt mein bhi kitna sach lagta hai - sochna.",
 ]
 
 
@@ -258,10 +258,10 @@ def generate_content(poet: dict, fmt: str) -> dict:
         "You run a premium Instagram Shayari account dedicating 30 days to one poet.\n"
         "Today's poet: {poet_name} ({poet_era})\n\n"
         "RULES:\n"
-        "1. Quote a REAL, AUTHENTIC sher by {poet_name} — NOT AI generated, NOT paraphrased.\n"
-        "   It must be verifiable — from a known diwan, collection, or mushaira recording.\n"
+        "1. Quote a REAL, AUTHENTIC sher by {poet_name} - NOT AI generated, NOT paraphrased.\n"
+        "   It must be verifiable - from a known diwan, collection, or mushaira recording.\n"
         "2. Format today: {fmt}\n"
-        "   one-liner  = 1 misra ONLY — use this ONLY if the line is completely self-sufficient\n"
+        "   one-liner  = 1 misra ONLY - use this ONLY if the line is completely self-sufficient\n"
         "                and iconic on its own. Do NOT force it for ordinary lines.\n"
         "   four-liner = exactly 4 lines (2 back-to-back couplets from the same ghazal)\n"
         "   couplet    = exactly 2 lines (one complete sher)\n"
@@ -269,7 +269,7 @@ def generate_content(poet: dict, fmt: str) -> dict:
         "   IMAGE RULE: Total Roman Urdu lines must stay under 8. If the sher is longer,\n"
         "               pick a shorter extract. Do NOT let text overflow the image.\n"
         "3. Roman Urdu transliteration of the sher only (for sher_roman)\n"
-        "4. Urdu script of the sher (for sher_urdu — used for TTS pronunciation)\n"
+        "4. Urdu script of the sher (for sher_urdu - used for TTS pronunciation)\n"
         "5. English translation: MAX 1 LINE. Poetic, not literal.\n"
         "6. Source collection if known (e.g. Diwan-e-Ghalib)\n\n"
         "EMOTION: pick one from [ishq, dard, intezaar, yaad, tanhai, gussa, falsafa, umeed, zindagi, maut]\n\n"
@@ -364,7 +364,7 @@ def create_photo_image(data: dict, poet: dict) -> str:
     add_texture(draw, W, H, palette["accent"])
     draw_border(draw, palette, W, H)
 
-    # Load fonts — fall back to default if font files missing
+    # Load fonts - fall back to default if font files missing
     try:
         font_poet  = ImageFont.truetype(FONT_SERIF,  28)
         font_day   = ImageFont.truetype(FONT_ITALIC, 17)
@@ -392,7 +392,7 @@ def create_photo_image(data: dict, poet: dict) -> str:
     center(poet["era"], 128, font_day, palette["sub"])
     draw.line([(65,162),(W-65,162)], fill=palette["border"], width=1)
 
-    # --- SHER SECTION — centered vertically in zone 178–720 ---
+    # --- SHER SECTION - centered vertically in zone 178-720 ---
     lines       = data["sher_roman"].strip().split("\n")
     all_wrapped = []
     for line in lines:
@@ -431,7 +431,7 @@ def create_photo_image(data: dict, poet: dict) -> str:
     draw_divider(draw, W//2, 935, palette["accent"], 60)
     center(IG_HANDLE, 962, font_brand, palette["sub"])
 
-    # --- VIGNETTE — dark edges fade inward for cinematic look ---
+    # --- VIGNETTE - dark edges fade inward for cinematic look ---
     vig  = Image.new("RGBA",(W,H),(0,0,0,0))
     vd   = ImageDraw.Draw(vig)
     for i in range(80):
@@ -443,7 +443,7 @@ def create_photo_image(data: dict, poet: dict) -> str:
     os.makedirs("output", exist_ok=True)
     fname = f"output/photo_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     img.save(fname, "JPEG", quality=95)
-    print(f"✅ Photo image: {fname}")
+    print(f"OK Photo image: {fname}")
     return fname
 
 
@@ -490,7 +490,7 @@ def create_reel_image(data: dict, poet: dict) -> str:
     center(poet["era"], 185, font_day, palette["sub"])
     draw.line([(80,225),(W-80,225)], fill=palette["border"], width=1)
 
-    # --- SHER — vertically centered in zone 300–1400 ---
+    # --- SHER - vertically centered in zone 300-1400 ---
     lines       = data["sher_roman"].strip().split("\n")
     all_wrapped = []
     for line in lines:
@@ -539,12 +539,12 @@ def create_reel_image(data: dict, poet: dict) -> str:
     os.makedirs("output", exist_ok=True)
     fname = f"output/reel_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     img.save(fname, "JPEG", quality=95)
-    print(f"✅ Reel image: {fname}")
+    print(f"OK Reel image: {fname}")
     return fname
 
 
 # ============================================================
-# STEP 4: Edge TTS voiceover — uses Urdu script for pronunciation
+# STEP 4: Edge TTS voiceover - uses Urdu script for pronunciation
 # ============================================================
 def generate_tts(text: str, output_path: str) -> bool:
     """
@@ -562,15 +562,15 @@ def generate_tts(text: str, output_path: str) -> bool:
             await communicate.save(output_path)
 
         asyncio.run(_speak())
-        print(f"✅ TTS: {output_path}")
+        print(f"OK TTS: {output_path}")
         return True
     except Exception as e:
-        print(f"❌ TTS error: {e}")
+        print(f"ERROR TTS error: {e}")
         return False
 
 
 # ============================================================
-# STEP 5: Reel video — Ken Burns zoom + TTS voice + music
+# STEP 5: Reel video - Ken Burns zoom + TTS voice + music
 # ============================================================
 def get_random_music() -> str:
     """Pick a random royalty-free MP3 from the music/ folder."""
@@ -592,7 +592,12 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
     Music is mixed at 18% volume under the voice.
     """
     try:
-        from moviepy.editor import ImageClip, AudioFileClip, CompositeAudioClip
+        try:
+            from moviepy.editor import ImageClip, AudioFileClip, CompositeAudioClip
+        except Exception:
+            # moviepy may not be installed in some environments - fail gracefully
+            print("moviepy is not available; cannot create reel video.")
+            return None
         import numpy as np
 
         # TTS audio drives the video duration (capped at 59s for Instagram)
@@ -603,8 +608,8 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
         music_path = get_random_music()
         if music_path:
             music       = AudioFileClip(music_path).subclip(0, duration)
-            music       = music.volumex(0.18)        # 18% — subtle background
-            tts_audio   = tts_audio.volumex(1.0)     # 100% — voice is primary
+            music       = music.volumex(0.18)        # 18% - subtle background
+            tts_audio   = tts_audio.volumex(1.0)     # 100% - voice is primary
             final_audio = CompositeAudioClip([music, tts_audio])
         else:
             final_audio = tts_audio
@@ -631,15 +636,15 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
             reel_path, fps=24, codec="libx264",
             audio_codec="aac", verbose=False, logger=None
         )
-        print(f"✅ Reel video: {reel_path}")
+        print(f"OK Reel video: {reel_path}")
         return reel_path
     except Exception as e:
-        print(f"❌ Reel video failed: {e}")
+        print(f"ERROR Reel video failed: {e}")
         return None
 
 
 # ============================================================
-# STEP 6: Upload image to catbox.moe (photos — same host as reels)
+# STEP 6: Upload image to catbox.moe (photos - same host as reels)
 # FIX: imgbb URLs were being rejected by Instagram servers with error 9004
 # ("media could not be fetched"). catbox.moe works reliably for both
 # photos and videos with Instagram Graph API.
@@ -655,7 +660,7 @@ def upload_image(path: str) -> str:
         )
     url = result.text.strip()
     if url.startswith("https://"):
-        print(f"✅ Photo hosted: {url}")
+        print(f"OK Photo hosted: {url}")
         return url
     raise Exception(f"catbox upload failed: {result.text}")
 
@@ -676,7 +681,7 @@ def upload_video_to_catbox(video_path: str) -> str:
         )
     url = result.text.strip()
     if url.startswith("https://"):
-        print(f"✅ Video hosted: {url}")
+        print(f"OK Video hosted: {url}")
         return url
     raise Exception(f"catbox upload failed: {result.text}")
 
@@ -711,22 +716,22 @@ def upload_video_to_instagram(video_path: str, caption: str) -> bool:
             timeout=15  # API call should complete within 15 seconds
         ).json()
     except requests.exceptions.Timeout:
-        print("❌ Instagram API timeout while creating container")
+        print("ERROR Instagram API timeout while creating container")
         return False
     except Exception as e:
-        print(f"❌ Container creation error: {e}")
+        print(f"ERROR Container creation error: {e}")
         return False
 
     if "error" in container_response:
-        print(f"❌ Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+        print(f"ERROR Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
         return False
     
     if "id" not in container_response:
-        print(f"❌ No container ID received: {container_response}")
+        print(f"ERROR No container ID received: {container_response}")
         return False
 
     container_id = container_response["id"]
-    print(f"✅ Container ID: {container_id}")
+    print(f"OK Container ID: {container_id}")
 
     # Step 2: Poll for processing completion (up to 20 × 10s = 200s max wait)
     # EXPLANATION: Instagram needs time to process the video (encoding, thumbnail generation, etc)
@@ -759,28 +764,28 @@ def upload_video_to_instagram(video_path: str, caption: str) -> bool:
 
         # Check for API errors first (like invalid token, rate limit, etc)
         if "error" in status_response:
-            print(f"❌ Instagram error during processing: {status_response.get('error', {})}")
+            print(f"ERROR Instagram error during processing: {status_response.get('error', {})}")
             return False
 
         status_code = status_response.get("status_code", "")
         print(f"   [{attempt}/{max_attempts}] Status: {status_code}")
 
         if status_code == "FINISHED":
-            print("   ✅ Processing complete!")
+            print("   OK Processing complete!")
             finished = True
             break
         elif status_code == "ERROR":
-            print(f"❌ Instagram video processing failed: {status_response}")
+            print(f"ERROR Instagram video processing failed: {status_response}")
             return False
         # If status is IN_PROGRESS or PROCESSING, loop continues to next iteration
 
     if not finished:
-        print(f"⚠️  Warning: Video not confirmed FINISHED after {max_attempts*10}s")
+        print(f"WARNING️  Warning: Video not confirmed FINISHED after {max_attempts*10}s")
         print("   Proceeding to publish anyway (Instagram may still be processing)...")
 
     # Step 3: Publish the processed container
     # EXPLANATION: Now that the container is (hopefully) processed, we publish it to make it live
-    # Publishing is different from creating — this is the final step that makes the reel visible
+    # Publishing is different from creating - this is the final step that makes the reel visible
     print("📤 Publishing Reel...")
     try:
         publish_response = requests.post(
@@ -792,21 +797,21 @@ def upload_video_to_instagram(video_path: str, caption: str) -> bool:
             timeout=15
         ).json()
     except requests.exceptions.Timeout:
-        print("❌ Instagram API timeout while publishing")
+        print("ERROR Instagram API timeout while publishing")
         return False
     except Exception as e:
-        print(f"❌ Publish error: {e}")
+        print(f"ERROR Publish error: {e}")
         return False
 
     if "error" in publish_response:
-        print(f"❌ Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+        print(f"ERROR Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
         return False
 
     if "id" in publish_response:
         print(f"🎉 Reel posted! ID: {publish_response['id']}")
         return True
 
-    print(f"❌ Unexpected response: {publish_response}")
+    print(f"ERROR Unexpected response: {publish_response}")
     return False
 
 
@@ -837,22 +842,22 @@ def post_photo(image_url: str, caption: str) -> bool:
             timeout=15  # API should respond within 15 seconds
         ).json()
     except requests.exceptions.Timeout:
-        print("❌ Instagram API timeout while creating photo container")
+        print("ERROR Instagram API timeout while creating photo container")
         return False
     except Exception as e:
-        print(f"❌ Photo container creation error: {e}")
+        print(f"ERROR Photo container creation error: {e}")
         return False
 
     if "error" in container_response:
-        print(f"❌ Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+        print(f"ERROR Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
         return False
 
     if "id" not in container_response:
-        print(f"❌ No container ID received: {container_response}")
+        print(f"ERROR No container ID received: {container_response}")
         return False
 
     container_id = container_response["id"]
-    print(f"✅ Container ID: {container_id}")
+    print(f"OK Container ID: {container_id}")
     
     # Step 2: Publish the photo immediately (no polling needed)
     # EXPLANATION: Photos don't need background processing like reels do,
@@ -870,21 +875,21 @@ def post_photo(image_url: str, caption: str) -> bool:
             timeout=15
         ).json()
     except requests.exceptions.Timeout:
-        print("❌ Instagram API timeout while publishing photo")
+        print("ERROR Instagram API timeout while publishing photo")
         return False
     except Exception as e:
-        print(f"❌ Publish error: {e}")
+        print(f"ERROR Publish error: {e}")
         return False
 
     if "error" in publish_response:
-        print(f"❌ Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+        print(f"ERROR Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
         return False
 
     if "id" in publish_response:
         print(f"🎉 Photo posted! ID: {publish_response['id']}")
         return True
 
-    print(f"❌ Unexpected response: {publish_response}")
+    print(f"ERROR Unexpected response: {publish_response}")
     return False
 
 
@@ -897,12 +902,12 @@ def build_caption(data: dict, poet: dict) -> str:
     # Max 9 hashtags: 6 base + 2 poet-specific + 1 AI-suggested
     all_tags   = BASE_HASHTAGS + poet_tags[:2] + extra_tags[:1]
     hashtags   = " ".join([f"#{t}" for t in all_tags[:9]])
-    disclaimer = "⚠️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
+    disclaimer = "WARNING️ No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
     return f"{data['caption']}\n\n{hashtags}\n\n{disclaimer}"
 
 
 # ============================================================
-# PROGRESS TRACKING — persisted in progress.json (committed to repo)
+# PROGRESS TRACKING - persisted in progress.json (committed to repo)
 # ============================================================
 def load_progress() -> dict:
     """Load progress.json and return default progress if it does not exist.
@@ -916,7 +921,7 @@ def load_progress() -> dict:
     else:
         data = {"poet_index":0, "total_posts":0}
 
-    # FIX: Ensure new fields always exist — prevents KeyError on old progress.json
+    # FIX: Ensure new fields always exist - prevents KeyError on old progress.json
     data.setdefault("last_post_date", "")
     data.setdefault("last_post_type", "")
     data.setdefault("status", "")
@@ -988,7 +993,7 @@ def run():
         print("Creating 9:16 reel image (1080x1920)...")
         reel_image = create_reel_image(data, poet)
 
-        # FIX: Use sher_urdu for TTS — correct pronunciation vs Roman transliteration
+        # FIX: Use sher_urdu for TTS - correct pronunciation vs Roman transliteration
         tts_text   = data.get("sher_urdu") or data["sher_roman"]
         audio_path = reel_image.replace(".jpg", ".mp3")
 
@@ -1000,7 +1005,7 @@ def run():
             reel_path = create_reel_video(reel_image, audio_path)
         else:
             # Fallback: silent 15-second video via ffmpeg
-            print("TTS failed — creating silent Reel via ffmpeg...")
+            print("TTS failed - creating silent Reel via ffmpeg...")
             reel_path = reel_image.replace(".jpg","_reel.mp4")
             os.system(
                 f'ffmpeg -loop 1 -i "{reel_image}" -t 15 '
@@ -1012,13 +1017,13 @@ def run():
             success = upload_video_to_instagram(reel_path, caption)
         else:
             # Final fallback: post as photo if video creation fails entirely
-            print("⚠️  Reel failed — falling back to photo post...")
+            print("WARNING️  Reel failed - falling back to photo post...")
             image_path = create_photo_image(data, poet)
             image_url  = upload_image(image_path)
             success    = post_photo(image_url, caption)
 
     else:
-        print(f"❌ Unknown POST_TYPE: '{POST_TYPE}' — expected 'photo' or 'reel'")
+        print(f"ERROR Unknown POST_TYPE: '{POST_TYPE}' - expected 'photo' or 'reel'")
         sys.exit(1)
 
     # --- UPDATE PROGRESS ON SUCCESS ---
@@ -1041,7 +1046,7 @@ def run():
             print(f"Moving to next poet: {next_poet['name']}")
 
         else:  # reel
-            # Reel does NOT advance the day — same day as the morning photo
+            # Reel does NOT advance the day - same day as the morning photo
             # Clear today_content after reel so tomorrow starts fresh
             p["today_content"] = None
 
@@ -1050,12 +1055,12 @@ def run():
     else:
         print("\u274c Post failed.")
         sys.exit(1)
-        print("❌ Post failed.")
+        print("ERROR Post failed.")
         sys.exit(1)
 
 
 # ============================================================
-# ENTRY POINT — retry wrapper around run()
+# ENTRY POINT - retry wrapper around run()
 # ============================================================
 def main():
     for attempt in range(1, MAX_RETRIES + 1):
@@ -1064,22 +1069,22 @@ def main():
             print(f"Attempt {attempt}/{MAX_RETRIES}")
             print(f"{'='*30}")
 
-            # Duplicate-post guard — skip if already posted today
+            # Duplicate-post guard - skip if already posted today
             if already_posted_today(POST_TYPE):
-                print(f"⚠️  Already posted {POST_TYPE} today (UTC). Skipping.")
+                print(f"WARNING️  Already posted {POST_TYPE} today (UTC). Skipping.")
                 return
 
             run()  # <-- all the work happens here
 
-            # FIX: mark_post_success() removed — progress is saved inside run()
+            # FIX: mark_post_success() removed - progress is saved inside run()
             # Previously, run() saved progress AND main() called mark_post_success()
-            # which saved again — redundant and caused issues if run() raised after save
+            # which saved again - redundant and caused issues if run() raised after save
 
-            print("✅ Completed successfully.")
+            print("OK Completed successfully.")
             return
 
         except Exception as e:
-            print(f"❌ Attempt {attempt} failed")
+            print(f"ERROR Attempt {attempt} failed")
             print(f"   Error type: {type(e).__name__}")
             print(f"   Error: {e}")
 

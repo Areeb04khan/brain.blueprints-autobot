@@ -1,0 +1,91 @@
+47: # CONFIGURATION \u2014 all values come from GitHub Actions secrets
+56: # DejaVu fonts \u2014 installed via apt-get in the workflow
+62: # POET SCHEDULE \u2014 30 days per poet, cycles through all poets
+65: # POET SCHEDULE \u2014 1 poet per day, cycles through entire list
+69: # Add new poets freely at the bottom \u2014 the bot picks up automatically
+72:     # \u2500\u2500 CLASSICAL URDU (pre-1900) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+84:     # \u2500\u2500 FREEDOM ERA & PROGRESSIVE (1900-1960) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+100:     # \u2500\u2500 BOLLYWOOD LYRICISTS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+108:     # \u2500\u2500 MODERN URDU (post-1947) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+124:     # \u2500\u2500 CONTEMPORARY (living / recent) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+137:     # \u2500\u2500 HINDI POETS \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+151:     # \u2500\u2500 OBSCURE & RARE VOICES \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+173: # FORMAT SELECTION \u2014 weighted random per run
+177: # No FORMAT_MAP needed \u2014 format picked fresh each run.
+182:     ("four-liner", 40),  # 4 lines \u2014 most common, fits image well
+184:     ("couplet",    20),  # 2 lines \u2014 used occasionally
+185:     ("one-liner",   5),  # 1 misra \u2014 ONLY for iconic self-sufficient lines
+194: # EMOTION \u2192 DARK COLOR PALETTES
+246:     "Aaj ke waqt mein bhi kitna sach lagta hai \u2014 sochna.",
+261:         "1. Quote a REAL, AUTHENTIC sher by {poet_name} \u2014 NOT AI generated, NOT paraphrased.\\n"
+262:         "   It must be verifiable \u2014 from a known diwan, collection, or mushaira recording.\\n"
+264:         "   one-liner  = 1 misra ONLY \u2014 use this ONLY if the line is completely self-sufficient\\n"
+272:         "4. Urdu script of the sher (for sher_urdu \u2014 used for TTS pronunciation)\\n"
+367:     # Load fonts \u2014 fall back to default if font files missing
+395:     # --- SHER SECTION \u2014 centered vertically in zone 178\u2013720 ---
+434:     # --- VIGNETTE \u2014 dark edges fade inward for cinematic look ---
+446:     print(f"\u2705 Photo image: {fname}")
+493:     # --- SHER \u2014 vertically centered in zone 300\u20131400 ---
+542:     print(f"\u2705 Reel image: {fname}")
+547: # STEP 4: Edge TTS voiceover \u2014 uses Urdu script for pronunciation
+565:         print(f"\u2705 TTS: {output_path}")
+568:         print(f"\u274c TTS error: {e}")
+573: # STEP 5: Reel video \u2014 Ken Burns zoom + TTS voice + music
+584:     print(f"\U0001f3b5 Music: {chosen}")
+598:             # moviepy may not be installed in some environments \u2014 fail gracefully
+611:             music       = music.volumex(0.18)        # 18% \u2014 subtle background
+612:             tts_audio   = tts_audio.volumex(1.0)     # 100% \u2014 voice is primary
+639:         print(f"\u2705 Reel video: {reel_path}")
+642:         print(f"\u274c Reel video failed: {e}")
+647: # STEP 6: Upload image to catbox.moe (photos \u2014 same host as reels)
+663:         print(f"\u2705 Photo hosted: {url}")
+684:         print(f"\u2705 Video hosted: {url}")
+699:     print("\u2601\ufe0f  Uploading video to catbox.moe...")
+719:         print("\u274c Instagram API timeout while creating container")
+722:         print(f"\u274c Container creation error: {e}")
+726:         print(f"\u274c Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+730:         print(f"\u274c No container ID received: {container_response}")
+734:     print(f"\u2705 Container ID: {container_id}")
+736:     # Step 2: Poll for processing completion (up to 20 \xd7 10s = 200s max wait)
+740:     print("\u23f3 Waiting for Instagram to process video...")
+741:     max_attempts = 20  # 20 attempts \xd7 10 seconds = 200 seconds (3.3 minutes) max wait
+767:             print(f"\u274c Instagram error during processing: {status_response.get('error', {})}")
+774:             print("   \u2705 Processing complete!")
+778:             print(f"\u274c Instagram video processing failed: {status_response}")
+783:         print(f"\u26a0\ufe0f  Warning: Video not confirmed FINISHED after {max_attempts*10}s")
+788:     # Publishing is different from creating \u2014 this is the final step that makes the reel visible
+789:     print("\U0001f4e4 Publishing Reel...")
+800:         print("\u274c Instagram API timeout while publishing")
+803:         print(f"\u274c Publish error: {e}")
+807:         print(f"\u274c Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+811:         print(f"\U0001f389 Reel posted! ID: {publish_response['id']}")
+814:     print(f"\u274c Unexpected response: {publish_response}")
+845:         print("\u274c Instagram API timeout while creating photo container")
+848:         print(f"\u274c Photo container creation error: {e}")
+852:         print(f"\u274c Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+856:         print(f"\u274c No container ID received: {container_response}")
+860:     print(f"\u2705 Container ID: {container_id}")
+865:     print("\U0001f4e4 Publishing photo...")
+878:         print("\u274c Instagram API timeout while publishing photo")
+881:         print(f"\u274c Publish error: {e}")
+885:         print(f"\u274c Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+889:         print(f"\U0001f389 Photo posted! ID: {publish_response['id']}")
+892:     print(f"\u274c Unexpected response: {publish_response}")
+905:     disclaimer = "\u26a0\ufe0f No copyright infringement intended. All rights belong to the original poet/publisher. Shared for cultural & educational purposes only."
+910: # PROGRESS TRACKING \u2014 persisted in progress.json (committed to repo)
+924:     # FIX: Ensure new fields always exist \u2014 prevents KeyError on old progress.json
+996:         # FIX: Use sher_urdu for TTS \u2014 correct pronunciation vs Roman transliteration
+1008:             print("TTS failed \u2014 creating silent Reel via ffmpeg...")
+1020:             print("\u26a0\ufe0f  Reel failed \u2014 falling back to photo post...")
+1026:         print(f"\u274c Unknown POST_TYPE: '{POST_TYPE}' \u2014 expected 'photo' or 'reel'")
+1049:             # Reel does NOT advance the day \u2014 same day as the morning photo
+1058:         print("\u274c Post failed.")
+1063: # ENTRY POINT \u2014 retry wrapper around run()
+1072:             # Duplicate-post guard \u2014 skip if already posted today
+1074:                 print(f"\u26a0\ufe0f  Already posted {POST_TYPE} today (UTC). Skipping.")
+1079:             # FIX: mark_post_success() removed \u2014 progress is saved inside run()
+1081:             # which saved again \u2014 redundant and caused issues if run() raised after save
+1083:             print("\u2705 Completed successfully.")
+1087:             print(f"\u274c Attempt {attempt} failed")
+1092:                 print(f"\u23f3 Retrying in {RETRY_DELAY//60} minutes...")
+1095:                 print("\U0001f6ab Max retries reached or non-retryable error. Exiting.")
