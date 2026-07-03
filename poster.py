@@ -30,9 +30,10 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import base64
 
-# How many times to retry on transient failures before giving up
-MAX_RETRIES = 3
-RETRY_DELAY = 3600  # 1 hour in seconds
+# How many times to retry on transient failures before giving up.
+# Keep retries short in GitHub Actions so failures finish with a clear status.
+MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "2"))
+RETRY_DELAY = int(os.environ.get("RETRY_DELAY_SECONDS", "60"))
 
 def is_retryable_error(e):
     """Returns True for network/server errors worth retrying, False for code bugs."""
@@ -49,9 +50,21 @@ def is_retryable_error(e):
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
-IMGBB_API_KEY          = os.environ.get("IMGBB_API_KEY", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
 IG_HANDLE              = "@ak_apak"
+
+REQUIRED_ENV_VARS = [
+    "GEMINI_API_KEY",
+    "INSTAGRAM_ACCESS_TOKEN",
+    "INSTAGRAM_USER_ID",
+]
+
+
+def validate_environment():
+    missing = [name for name in REQUIRED_ENV_VARS if not os.environ.get(name)]
+    if missing:
+        raise RuntimeError(f"Missing required environment variable(s): {', '.join(missing)}")
+
 
 # DejaVu fonts - installed via apt-get in the workflow
 FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
@@ -648,7 +661,6 @@ def create_reel_video(image_path: str, tts_path: str) -> str:
 # FIX: imgbb URLs were being rejected by Instagram servers with error 9004
 # ("media could not be fetched"). catbox.moe works reliably for both
 # photos and videos with Instagram Graph API.
-# IMGBB_API_KEY secret is no longer needed but harmless to keep.
 # ============================================================
 def upload_image(path: str) -> str:
     """Uploads JPEG to catbox.moe and returns public URL for Instagram API."""
@@ -656,7 +668,8 @@ def upload_image(path: str) -> str:
         result = requests.post(
             "https://catbox.moe/user/api.php",
             data={"reqtype": "fileupload", "userhash": ""},
-            files={"fileToUpload": f}
+            files={"fileToUpload": f},
+            timeout=60
         )
     url = result.text.strip()
     if url.startswith("https://"):
@@ -677,7 +690,8 @@ def upload_video_to_catbox(video_path: str) -> str:
         result = requests.post(
             "https://catbox.moe/user/api.php",
             data={"reqtype": "fileupload", "userhash": ""},
-            files={"fileToUpload": f}
+            files={"fileToUpload": f},
+            timeout=180
         )
     url = result.text.strip()
     if url.startswith("https://"):
@@ -1063,6 +1077,8 @@ def run():
 # ENTRY POINT - retry wrapper around run()
 # ============================================================
 def main():
+    validate_environment()
+
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             print(f"\n{'='*30}")

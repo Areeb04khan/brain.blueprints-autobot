@@ -1,6 +1,0 @@
-Run python poster.py
-  File "/home/runner/work/shayari-bot/shayari-bot/poster.py", line 329
-    """Horizontal lines with a central diamond — used between sher and translation."""
-                                               ^
-SyntaxError: invalid character '—' (U+2014)
-Error: Process completed with exit code 1.d

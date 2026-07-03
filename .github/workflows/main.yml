@@ -2,18 +2,23 @@ name: Daily Shayari Post
 
 on:
   schedule:
-    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST — Photo
-    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST — Reel
+    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST - Photo
+    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST - Reel
   workflow_dispatch:
     inputs:
       post_type:
         description: 'Post type: photo or reel'
         required: true
         default: 'photo'
+        type: choice
+        options:
+          - photo
+          - reel
 
 jobs:
   post-shayari:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Checkout code
@@ -45,11 +50,11 @@ jobs:
         id: post_type
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "type=${{ github.event.inputs.post_type }}" >> $GITHUB_OUTPUT
-          elif [ "$(date -u +%H)" -le "04" ]; then
-            echo "type=photo" >> $GITHUB_OUTPUT
+            echo "type=${{ github.event.inputs.post_type }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "30 2 * * *" ]; then
+            echo "type=photo" >> "$GITHUB_OUTPUT"
           else
-            echo "type=reel" >> $GITHUB_OUTPUT
+            echo "type=reel" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Shayari Bot
@@ -57,8 +62,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
-          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
           POST_TYPE: ${{ steps.post_type.outputs.type }}
+          MAX_RETRIES: "2"
+          RETRY_DELAY_SECONDS: "60"
         run: python poster.py
 
       - name: Save progress
