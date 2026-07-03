@@ -50,6 +50,7 @@ def is_retryable_error(e):
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
+CATBOX_USERHASH        = os.environ.get("CATBOX_USERHASH", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo")  # "photo" or "reel"
 IG_HANDLE              = "@ak_apak"
 
@@ -64,6 +65,18 @@ def validate_environment():
     missing = [name for name in REQUIRED_ENV_VARS if not os.environ.get(name)]
     if missing:
         raise RuntimeError(f"Missing required environment variable(s): {', '.join(missing)}")
+
+
+def catbox_form_data() -> dict:
+    data = {"reqtype": "fileupload"}
+    if CATBOX_USERHASH:
+        data["userhash"] = CATBOX_USERHASH
+    return data
+
+
+CATBOX_HEADERS = {
+    "User-Agent": "shayari-bot/1.0 (+https://github.com)",
+}
 
 
 # DejaVu fonts - installed via apt-get in the workflow
@@ -667,8 +680,9 @@ def upload_image(path: str) -> str:
     with open(path, "rb") as f:
         result = requests.post(
             "https://catbox.moe/user/api.php",
-            data={"reqtype": "fileupload", "userhash": ""},
+            data=catbox_form_data(),
             files={"fileToUpload": f},
+            headers=CATBOX_HEADERS,
             timeout=60
         )
     url = result.text.strip()
@@ -689,8 +703,9 @@ def upload_video_to_catbox(video_path: str) -> str:
     with open(video_path,"rb") as f:
         result = requests.post(
             "https://catbox.moe/user/api.php",
-            data={"reqtype": "fileupload", "userhash": ""},
+            data=catbox_form_data(),
             files={"fileToUpload": f},
+            headers=CATBOX_HEADERS,
             timeout=180
         )
     url = result.text.strip()
