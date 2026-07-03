@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Shayari Instagram Bot v4.2
 - Real authentic Shayari
@@ -5,16 +6,16 @@ Shayari Instagram Bot v4.2
 - 1:1 (1080x1080) for photos, 9:16 (1080x1920) for Reels
 - catbox.moe for video hosting
 - Edge TTS for voiceover (free, no API key)
-- No Urdu script on image — Roman + English only
+- No Urdu script on image - Roman + English only
 
 FIXES in v4.2:
-1. Duplicate shayari fix — photo saves generated content to progress.json,
+1. Duplicate shayari fix - photo saves generated content to progress.json,
    reel loads and reuses it instead of calling Gemini again. Same sher, same
    caption for both posts of the same day.
-2. Posting time fix — post type is no longer detected from the clock (unreliable
+2. Posting time fix - post type is no longer detected from the clock (unreliable
    due to GitHub Actions queue delays). Each cron trigger now sets POST_TYPE
    explicitly in the workflow via separate jobs. Clock detection removed entirely.
-3. Format updated — "one-liner" renamed to "four-liner" everywhere (prompt + map).
+3. Format updated - "one-liner" renamed to "four-liner" everywhere (prompt + map).
 """
 
 from google import genai
