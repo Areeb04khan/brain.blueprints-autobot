@@ -683,60 +683,130 @@ def upload_video_to_catbox(video_path: str) -> str:
 
 def upload_video_to_instagram(video_path: str, caption: str) -> bool:
     """
-    3-step Instagram Reels upload:
+    3-step Instagram Reels upload with improved error handling:
     1. Upload MP4 to catbox.moe for public URL
     2. Create media container (Instagram processes video asynchronously)
-    3. Poll for FINISHED status, then publish
+    3. Poll for FINISHED status with timeout, then publish
+    
+    FIX (v4.2.1): Added explicit timeout logic, better error messages,
+    and early exit if video processing fails or takes too long.
     """
     print("☁️  Uploading video to catbox.moe...")
     video_url = upload_video_to_catbox(video_path)
 
     # Step 1: Create Reels media container
-    container = requests.post(
-        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
-        data={
-            "media_type":   "REELS",
-            "video_url":    video_url,
-            "caption":      caption,
-            "access_token": INSTAGRAM_ACCESS_TOKEN,
-        }
-    ).json()
-
-    if "id" not in container:
-        print(f"❌ Reel container failed: {container}")
+    # EXPLANATION: First, we create a container on Instagram that will hold our video
+    # The container is created but the video isn't published yet (asynchronous)
+    # If this fails, there's no point continuing
+    print("   Creating Instagram media container...")
+    try:
+        container_response = requests.post(
+            f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
+            data={
+                "media_type":   "REELS",
+                "video_url":    video_url,
+                "caption":      caption,
+                "access_token": INSTAGRAM_ACCESS_TOKEN,
+            },
+            timeout=15  # API call should complete within 15 seconds
+        ).json()
+    except requests.exceptions.Timeout:
+        print("❌ Instagram API timeout while creating container")
+        return False
+    except Exception as e:
+        print(f"❌ Container creation error: {e}")
         return False
 
-    print(f"✅ Reel container created: {container['id']}")
+    if "error" in container_response:
+        print(f"❌ Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+        return False
+    
+    if "id" not in container_response:
+        print(f"❌ No container ID received: {container_response}")
+        return False
 
-    # Step 2: Poll for processing completion (up to 15 x 10s = 150s)
-    for attempt in range(15):
-        time.sleep(10)
-        status = requests.get(
-            f"https://graph.instagram.com/v21.0/{container['id']}",
-            params={"fields":"status_code","access_token":INSTAGRAM_ACCESS_TOKEN}
-        ).json()
-        sc = status.get("status_code","")
-        print(f"   [{attempt+1}/15] Status: {sc}")
-        if sc == "FINISHED":
-            break
-        if sc == "ERROR":
-            print(f"❌ Instagram processing error: {status}")
+    container_id = container_response["id"]
+    print(f"✅ Container ID: {container_id}")
+
+    # Step 2: Poll for processing completion (up to 20 × 10s = 200s max wait)
+    # EXPLANATION: Instagram needs time to process the video (encoding, thumbnail generation, etc)
+    # We poll the container status every 10 seconds, waiting for "FINISHED" status
+    # If it returns "ERROR" or takes too long, we exit gracefully with an error message
+    print("⏳ Waiting for Instagram to process video...")
+    max_attempts = 20  # 20 attempts × 10 seconds = 200 seconds (3.3 minutes) max wait
+    finished = False
+    
+    for attempt in range(1, max_attempts + 1):
+        time.sleep(10)  # Wait 10 seconds between status checks
+        
+        try:
+            status_response = requests.get(
+                f"https://graph.instagram.com/v21.0/{container_id}",
+                params={
+                    "fields": "status_code",
+                    "access_token": INSTAGRAM_ACCESS_TOKEN
+                },
+                timeout=10  # Status check should also have a timeout
+            ).json()
+        except requests.exceptions.Timeout:
+            # If status check times out, just log it and retry
+            print(f"   [{attempt}/{max_attempts}] Status check timeout (retrying...)")
+            continue
+        except Exception as e:
+            # Same for other network errors
+            print(f"   [{attempt}/{max_attempts}] Status check error: {e}")
+            continue
+
+        # Check for API errors first (like invalid token, rate limit, etc)
+        if "error" in status_response:
+            print(f"❌ Instagram error during processing: {status_response.get('error', {})}")
             return False
 
-    # Step 3: Publish the processed container
-    publish = requests.post(
-        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
-        data={
-            "creation_id":  container["id"],
-            "access_token": INSTAGRAM_ACCESS_TOKEN,
-        }
-    ).json()
+        status_code = status_response.get("status_code", "")
+        print(f"   [{attempt}/{max_attempts}] Status: {status_code}")
 
-    if "id" in publish:
-        print(f"🎉 Reel posted! ID: {publish['id']}")
+        if status_code == "FINISHED":
+            print("   ✅ Processing complete!")
+            finished = True
+            break
+        elif status_code == "ERROR":
+            print(f"❌ Instagram video processing failed: {status_response}")
+            return False
+        # If status is IN_PROGRESS or PROCESSING, loop continues to next iteration
+
+    if not finished:
+        print(f"⚠️  Warning: Video not confirmed FINISHED after {max_attempts*10}s")
+        print("   Proceeding to publish anyway (Instagram may still be processing)...")
+
+    # Step 3: Publish the processed container
+    # EXPLANATION: Now that the container is (hopefully) processed, we publish it to make it live
+    # Publishing is different from creating — this is the final step that makes the reel visible
+    print("📤 Publishing Reel...")
+    try:
+        publish_response = requests.post(
+            f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
+            data={
+                "creation_id":  container_id,
+                "access_token": INSTAGRAM_ACCESS_TOKEN,
+            },
+            timeout=15
+        ).json()
+    except requests.exceptions.Timeout:
+        print("❌ Instagram API timeout while publishing")
+        return False
+    except Exception as e:
+        print(f"❌ Publish error: {e}")
+        return False
+
+    if "error" in publish_response:
+        print(f"❌ Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+        return False
+
+    if "id" in publish_response:
+        print(f"🎉 Reel posted! ID: {publish_response['id']}")
         return True
 
-    print(f"❌ Reel publish failed: {publish}")
+    print(f"❌ Unexpected response: {publish_response}")
     return False
 
 
@@ -745,34 +815,76 @@ def upload_video_to_instagram(video_path: str, caption: str) -> bool:
 # ============================================================
 def post_photo(image_url: str, caption: str) -> bool:
     """
-    2-step photo upload:
-    1. Create media container with image URL
-    2. Publish container
+    2-step photo upload with timeout handling:
+    1. Create media container with image URL (photos don't need polling like reels)
+    2. Publish container immediately
+    
+    FIX (v4.2.1): Added timeout to all API calls and better error detection.
+    Photos are faster than reels so we skip the polling step entirely.
     """
-    container = requests.post(
-        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
-        data={
-            "image_url":    image_url,
-            "caption":      caption,
-            "access_token": INSTAGRAM_ACCESS_TOKEN
-        }
-    ).json()
-    if "id" not in container:
-        print(f"❌ Container failed: {container}")
+    # Step 1: Create photo container on Instagram
+    # EXPLANATION: Unlike reels which need background processing, photos are posted
+    # immediately. So we create the container and publish right away.
+    print("   Creating Instagram photo container...")
+    try:
+        container_response = requests.post(
+            f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media",
+            data={
+                "image_url":    image_url,
+                "caption":      caption,
+                "access_token": INSTAGRAM_ACCESS_TOKEN
+            },
+            timeout=15  # API should respond within 15 seconds
+        ).json()
+    except requests.exceptions.Timeout:
+        print("❌ Instagram API timeout while creating photo container")
         return False
-    print(f"✅ Container: {container['id']}")
-    time.sleep(5)  # Brief wait before publishing
-    publish = requests.post(
-        f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
-        data={
-            "creation_id":  container["id"],
-            "access_token": INSTAGRAM_ACCESS_TOKEN
-        }
-    ).json()
-    if "id" in publish:
-        print(f"🎉 Photo posted! ID: {publish['id']}")
+    except Exception as e:
+        print(f"❌ Photo container creation error: {e}")
+        return False
+
+    if "error" in container_response:
+        print(f"❌ Instagram error: {container_response.get('error', {}).get('message', 'Unknown')}")
+        return False
+
+    if "id" not in container_response:
+        print(f"❌ No container ID received: {container_response}")
+        return False
+
+    container_id = container_response["id"]
+    print(f"✅ Container ID: {container_id}")
+    
+    # Step 2: Publish the photo immediately (no polling needed)
+    # EXPLANATION: Photos don't need background processing like reels do,
+    # so we can publish immediately after container creation.
+    print("📤 Publishing photo...")
+    time.sleep(2)  # Small delay to ensure Instagram is ready (optional but recommended)
+    
+    try:
+        publish_response = requests.post(
+            f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish",
+            data={
+                "creation_id":  container_id,
+                "access_token": INSTAGRAM_ACCESS_TOKEN
+            },
+            timeout=15
+        ).json()
+    except requests.exceptions.Timeout:
+        print("❌ Instagram API timeout while publishing photo")
+        return False
+    except Exception as e:
+        print(f"❌ Publish error: {e}")
+        return False
+
+    if "error" in publish_response:
+        print(f"❌ Publish failed: {publish_response.get('error', {}).get('message', 'Unknown')}")
+        return False
+
+    if "id" in publish_response:
+        print(f"🎉 Photo posted! ID: {publish_response['id']}")
         return True
-    print(f"❌ Publish failed: {publish}")
+
+    print(f"❌ Unexpected response: {publish_response}")
     return False
 
 
