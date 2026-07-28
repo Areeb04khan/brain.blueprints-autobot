@@ -484,6 +484,10 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
                 elif code == "ERROR":
                     print("❌ Instagram Video Processing Failed.")
                     return False
+        else:
+            # FIX: High-res photos take a few seconds to process. Wait before publishing.
+            print("⏳ Waiting 15 seconds for Instagram to process the high-res photo...")
+            time.sleep(15)
 
         print("📤 Publishing to Instagram...")
         p_res = requests.post(f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish", data={"creation_id": container_id, "access_token": INSTAGRAM_ACCESS_TOKEN}).json()
@@ -497,6 +501,7 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
     except Exception as e:
         print(f"❌ Instagram API Failure: {e}")
         return False
+        
 
 # ============================================================
 # STATE TRACKING
