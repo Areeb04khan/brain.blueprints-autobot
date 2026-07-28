@@ -1,54 +1,40 @@
+
 <div align="center">
 
-# ✦ Instagram Shayari Bot ✦
+# ✦ Instagram Shayari Bot v5.5 ✦
 
-### A cinematic, fully automated poetry-posting engine for Instagram.
+### A cinematic, retention-focused, fully automated poetry publishing engine.
 
 ![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini-AI_Content-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-AI_Content-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+![Pexels](https://img.shields.io/badge/Pexels-Video_&_Photo-05A081?style=for-the-badge)
+![Unsplash](https://img.shields.io/badge/Unsplash-HD_Photos-000000?style=for-the-badge&logo=unsplash&logoColor=white)
 ![Instagram](https://img.shields.io/badge/Instagram-Graph_API-E4405F?style=for-the-badge&logo=instagram&logoColor=white)
 ![License](https://img.shields.io/badge/License-Attribution_Required-black?style=for-the-badge)
 
 **Generate. Design. Host. Publish. Repeat.**
 
-Turn a GitHub repository into a tiny publishing studio that wakes up twice a day, writes Shayari, designs a post, creates a Reel, and publishes to Instagram.
+Turn a GitHub repository into an autonomous publishing studio that runs 100% on free APIs to curate poetry, fetch aesthetic stock media, synthesize voiceovers, edit Reels, and publish directly to Instagram.
 
 </div>
 
 ---
 
-## 🌙 What Makes This Different
+## 🌙 What Makes Version 5.5 Different
 
-Most automation scripts just post a file. This one behaves more like a small creative system:
+Unlike simple text-posting scripts, this bot builds high-retention Instagram media designed for maximum reach, shares, and saves:
 
-| Layer | What It Does |
-|---|---|
-| 🧠 Content Brain | Uses Gemini to generate structured Shayari metadata, not just plain text. |
-| 🎨 Visual Engine | Builds 1080x1080 posts and 1080x1920 Reel frames with Pillow. |
-| 🎙️ Voice Layer | Uses Urdu Edge TTS for Reel narration. |
-| 🎞️ Reel Studio | Mixes image, voiceover, and background music into an MP4. |
-| ☁️ Media Bridge | Uploads generated media to a public host Instagram can fetch. |
-| 📡 Publisher | Uses Instagram Graph API to create and publish media containers. |
-| 🕰️ Scheduler | Runs automatically with GitHub Actions. |
-| 🧾 Memory | Tracks progress so the same day's photo and Reel share the same Shayari. |
-
----
-
-## ✨ Feature Map
-
-- 📸 Scheduled Instagram photo posts.
-- 🎬 Scheduled Instagram Reels.
-- 🧠 Gemini-powered Shayari generation.
-- 🪶 Roman text, Urdu text, English translation, captions, hashtags, emotion, source, and color hints.
-- 🖼️ Square 1080x1080 image generation.
-- 📱 Vertical 1080x1920 Reel image generation.
-- 🎙️ Urdu voiceover with Edge TTS.
-- 🎵 Background music mixing from the `music/` folder.
-- ☁️ TempFile.org media hosting by default.
-- 🧱 Optional Cloudinary support for durable hosted media.
-- ⛔ Bounded retries and workflow timeout so failures finish clearly.
-- 🧭 Progress tracking to avoid duplicate same-day posts.
+| Layer | Technology | Function |
+|---|---|---|
+| 🧠 **Content Brain** | Gemini 2.5 Flash | Generates authentic Shayari, Roman Urdu, Urdu script, English translations, and visual search terms. |
+| 🖼️ **Photo Engine** | Unsplash + Pexels API | Fetches aesthetic high-res photography with translucent dark overlays for legibility. |
+| 🎬 **Reel Studio** | Pexels + Unsplash + MoviePy | Composites 4K vertical motion video clips with timed text overlays and background music. |
+| 🎙️ **Voice Layer** | Edge-TTS (`ur-PK-AsadNeural`) | Synthesizes realistic Urdu pronunciation for video narration. |
+| 🔄 **Cross-Fallback** | Dual-Engine Architecture | Automatically fails over between Unsplash and Pexels if any API limit or network error occurs. |
+| ☁️ **Media Bridge** | TempFile / Cloudinary | Serves temporary or permanent public URLs for Instagram Graph API ingestion. |
+| 📡 **Publisher** | Instagram Graph API | Automates container creation, video processing status polling, and direct publishing. |
+| 🕰️ **Scheduler** | GitHub Actions | Runs completely hands-free on daily crons. |
 
 ---
 
@@ -56,351 +42,94 @@ Most automation scripts just post a file. This one behaves more like a small cre
 
 ```mermaid
 flowchart TD
-    A["GitHub Actions schedule/manual run"] --> B["Set POST_TYPE: photo or reel"]
-    B --> C["poster.py"]
-    C --> D["Load progress.json"]
-    D --> E["Pick poet + format"]
-    E --> F["Gemini generates structured Shayari JSON"]
-    F --> G{"POST_TYPE"}
-    G -->|photo| H["Render square image with Pillow"]
-    G -->|reel| I["Render vertical image"]
-    I --> J["Generate Urdu TTS"]
-    J --> K["Mix Reel video with MoviePy/FFmpeg"]
-    H --> L["Upload media to TempFile/Cloudinary"]
-    K --> L
-    L --> M["Create Instagram media container"]
-    M --> N["Publish to Instagram"]
-    N --> O["Save progress.json"]
+    A["GitHub Actions Schedule / Manual Run"] --> B{"POST_TYPE"}
+    B -->|photo| C["Fetch Unsplash / Pexels Photo"]
+    B -->|reel| D["Fetch Pexels / Unsplash Vertical Video"]
+    C --> E["Apply Translucent Dark Tint + Overlay Text (Pillow)"]
+    D --> F["Generate Native Urdu Audio (Edge-TTS)"]
+    F --> G["Layer Background Music + Text Overlay (MoviePy)"]
+    E --> H["Upload Public Media (TempFile / Cloudinary)"]
+    G --> H
+    H --> I["Create Instagram Media Container"]
+    I --> J["Poll Container Processing (Reels)"]
+    J --> K["Publish to Instagram"]
+    K --> L["Update progress.json & Cycle Poet List"]
+
 ```
-
----
-
 ## 📂 Repository Layout
-
 ```text
 .
-|-- .github/workflows/main.yml  # automation schedule and runtime
-|-- music/                      # background MP3 files for Reels
-|-- poster.py                   # the bot brain
-|-- progress.json               # posting state and duplicate guard
-|-- requirements.txt            # Python dependencies
-|-- CONTEXT.md                  # maintainer/debugging handbook
-|-- LICENSE                     # attribution-required license
-`-- README.md                   # this guide
+├── .github/workflows/main.yml  # GitHub Actions schedule and environment setup
+├── music/                      # Royalty-free instrumental MP3 tracks for Reels
+├── poster.py                   # The core bot engine
+├── progress.json               # Posting state tracking
+├── requirements.txt            # Python dependencies
+├── LICENSE                     # Attribution-Required License
+└── README.md                   # System documentation
+
 ```
-
----
-
-## 🚀 Quick Start
-
-### 1. Fork Or Clone
-
-Use this repository as your starting point.
-
+## 🚀 Quick Start Setup
+### 1. Clone or Fork
 ```bash
 git clone YOUR_REPO_URL
 cd shayari-bot
+
 ```
-
-### 2. Install Locally
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Add Your Secrets
-
-In GitHub, open:
-
-`Settings` → `Secrets and variables` → `Actions`
-
-Add:
-
-| Secret | Required | Purpose |
-|---|---:|---|
-| `GEMINI_API_KEY` | ✅ | Generates Shayari content. |
-| `INSTAGRAM_ACCESS_TOKEN` | ✅ | Publishes through Instagram Graph API. |
-| `INSTAGRAM_USER_ID` | ✅ | Identifies your Instagram account. |
-| `CLOUDINARY_URL` | Optional | Use only if `MEDIA_HOST=cloudinary`. |
-| `CATBOX_USERHASH` | Optional | Use only if `MEDIA_HOST=catbox`. |
-
-### 4. Run The Workflow
-
-Go to GitHub:
-
-`Actions` → `Daily Shayari Post` → `Run workflow`
-
-Choose:
-
-- `photo`
-- `reel`
-
----
-
-## 🔑 Create The Instagram OAuth Token
-
-You need an Instagram Business or Creator account connected to a Meta app.
-
-1. Go to https://developers.facebook.com/apps/.
-2. Create or open your Meta app.
-3. Add Instagram API / Instagram Business Login setup.
-4. Connect your Instagram account.
-5. Go to `Instagram` → `API setup with Instagram business login`.
-6. Click `Generate token`.
-7. Approve permissions.
-8. Copy only the token string.
-9. Add it to GitHub as `INSTAGRAM_ACCESS_TOKEN`.
-
-Verify it:
-
-```bash
-curl "https://graph.instagram.com/me?fields=id,username&access_token=YOUR_TOKEN"
-```
-
-You should see your Instagram `id` and `username`.
-
-> Tokens usually need renewal about every 60 days. When auth fails, regenerate the token and update the GitHub secret.
-
----
-
-## 🧠 Create The Gemini API Key
-
-1. Open Google AI Studio.
-2. Create a Gemini API key.
-3. Add it to GitHub Actions secrets as `GEMINI_API_KEY`.
-
-The bot uses Gemini to return structured JSON with:
-
-- Shayari in Roman text.
-- Shayari in Urdu script for TTS.
-- English translation.
-- Caption.
-- Emotion.
-- Source.
-- Suggested colors.
-- Hashtags.
-
----
-
-## ☁️ Media Hosting Options
-
-Instagram does not accept a local image or MP4 file directly. It needs a public HTTPS URL that Meta can fetch.
-
-| Host | Best For | Secret Needed | Notes |
-|---|---|---:|---|
-| `tempfile` | Simple setup | No | Default. Temporary URLs, good for immediate publishing. |
-| `cloudinary` | Production durability | Yes | Recommended if you want stable CDN URLs. |
-| `catbox` | Manual fallback | Optional | Supported, but anonymous uploads previously failed with `Invalid uploader`. |
-
-Current workflow value:
-
+### 2. Configure GitHub Secrets
+Go to your repository:
+Settings → Secrets and variables → Actions → New repository secret
+| Secret Name | Required | Description |
+|---|---|---|
+| GEMINI_API_KEY | ✅ | Free API key from Google AI Studio. |
+| INSTAGRAM_ACCESS_TOKEN | ✅ | Meta Graph API long-lived access token. |
+| INSTAGRAM_USER_ID | ✅ | Connected Instagram Creator / Business ID. |
+| PEXELS_API_KEY | ✅ | Free API key from Pexels Developer Portal. |
+| UNSPLASH_ACCESS_KEY | ✅ | Free Access Key from Unsplash Developer Portal. |
+| CLOUDINARY_URL | Optional | Required only if MEDIA_HOST=cloudinary. |
+## 🕰️ Automated Schedule
+The bot posts twice daily via GitHub Actions:
 ```yaml
-MEDIA_HOST: tempfile
+- cron: '30 2 * * *'   # 8:00 AM IST - Static Photo
+- cron: '30 13 * * *'  # 7:00 PM IST - Motion Reel
+
 ```
-
-To switch to Cloudinary:
-
-1. Create a Cloudinary account.
-2. Copy your `CLOUDINARY_URL`.
-3. Add it as a GitHub Actions secret.
-4. Change workflow env:
-
-```yaml
-MEDIA_HOST: cloudinary
-```
-
----
-
-## 🕰️ Automation Schedule
-
-The workflow runs twice a day:
-
-```yaml
-- cron: '30 2 * * *'   # photo, about 8:00 AM IST
-- cron: '30 13 * * *'  # reel, about 7:00 PM IST
-```
-
-The workflow also supports manual runs with a dropdown:
-
-```yaml
-post_type:
-  options:
-    - photo
-    - reel
-```
-
----
-
-## 🎨 Make It Yours
-
-This is where the fun starts.
-
-### Change The Instagram Handle
-
-```python
-IG_HANDLE = "@your_handle"
-```
-
-### Change The Poet List
-
-```python
-POET_SCHEDULE = [
-    {"name": "Mirza Ghalib", "era": "1797-1869"},
-    {"name": "Faiz Ahmed Faiz", "era": "1911-1984"},
-]
-```
-
-### Change Content Formats
-
-```python
-FORMAT_WEIGHTS = [
-    ("four-liner", 40),
-    ("longer", 35),
-    ("couplet", 20),
-    ("one-liner", 5),
-]
-```
-
-### Change The Visual Mood
-
-```python
-EMOTION_PALETTES = {
-    "ishq": {
-        "bg": "#1a0010",
-        "text": "#f5c6d0",
-        "accent": "#e8587a",
-    },
-}
-```
-
-### Change The AI Voice
-
-Edit `generate_tts` in `poster.py`.
-
-Current voice:
-
-```python
-VOICE = "ur-PK-AsadNeural"
-```
-
-### Change The Generation Style
-
-Edit the prompt inside:
-
-```python
-generate_content(poet, fmt)
-```
-
-You can make it:
-
-- More classical.
-- More modern.
-- More romantic.
-- More minimal.
-- More educational.
-- More brand-specific.
-
----
-
-## 🧪 Local Test
-
-Windows PowerShell:
-
+## 🧪 Local Testing
+PowerShell (Windows):
 ```powershell
 $env:GEMINI_API_KEY="your_key"
 $env:INSTAGRAM_ACCESS_TOKEN="your_token"
 $env:INSTAGRAM_USER_ID="your_user_id"
+$env:PEXELS_API_KEY="your_pexels_key"
+$env:UNSPLASH_ACCESS_KEY="your_unsplash_key"
 $env:POST_TYPE="photo"
-$env:MEDIA_HOST="tempfile"
-python poster.py
+python -u poster.py
+
 ```
-
-Linux/macOS:
-
+Bash (Linux / macOS):
 ```bash
 export GEMINI_API_KEY="your_key"
 export INSTAGRAM_ACCESS_TOKEN="your_token"
 export INSTAGRAM_USER_ID="your_user_id"
+export PEXELS_API_KEY="your_pexels_key"
+export UNSPLASH_ACCESS_KEY="your_unsplash_key"
 export POST_TYPE="photo"
-export MEDIA_HOST="tempfile"
-python poster.py
+python -u poster.py
+
 ```
-
----
-
-## 🛠️ Troubleshooting
-
-### ❌ Invalid OAuth access token
-
-Example:
-
-```text
-Invalid OAuth access token - Cannot parse access token
-```
-
-Fix:
-
-1. Regenerate the token in Meta Developers.
-2. Copy only the token string.
-3. Update `INSTAGRAM_ACCESS_TOKEN` in GitHub Actions secrets.
-4. Re-run the workflow.
-
-### ❌ Media could not be fetched
-
-Instagram could not download your image/video URL.
-
-Fix:
-
-1. Open the logged media URL in a private browser window.
-2. Confirm it opens without login.
-3. Switch to `MEDIA_HOST=cloudinary` if temporary hosting is unreliable.
-
-### ❌ Catbox invalid uploader
-
-Catbox rejected the upload.
-
-Fix:
-
-- Keep `MEDIA_HOST=tempfile`.
-- Or switch to `MEDIA_HOST=cloudinary`.
-
-### ❌ Gemini returns malformed JSON
-
-Fix:
-
-1. Re-run once.
-2. Tighten the prompt in `generate_content`.
-3. Add stronger schema validation if it repeats.
-
-### ❌ Reel generation fails
-
-Possible causes:
-
-- TTS service issue.
-- MoviePy failure.
-- FFmpeg failure.
-- Broken or oversized audio file.
-
-The script attempts a silent FFmpeg Reel fallback when TTS fails.
-
 ---
 
 ## 🧾 License
 
-This project uses a custom attribution-required license.
+This project is licensed under the **Attribution Required License**. See the full terms in the [LICENSE](LICENSE) file.
 
-You may use, copy, modify, and distribute this project, but you must give visible credit to:
-
-**Areeb Khan**
-
-See [LICENSE](LICENSE) for the full terms.
+> **Attribution Requirement**  
+> You are free to copy, modify, and distribute this software for personal or commercial automation, but visible credit to **Areeb Khan** is strictly required in derivative works or documentations.
 
 ---
 
 <div align="center">
 
-### Built for people who want poetry, automation, and aesthetics in the same room.
-
-**If this project helps you build your own Instagram poetry engine, credit Areeb Khan.**
+*Built for people who want poetry, automation, and aesthetics in the same room.*
 
 </div>
+
