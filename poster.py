@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Shayari Instagram Bot v5.5 (Unsplash + Pexels Cross-Fallback Dual Engine)
+Shayari Instagram Bot v5.6 (ElevenLabs + Edge-TTS Fallback)
 - Real authentic Shayari via Gemini 2.5 Flash
 - Dynamic cross-fallback media engine for Photos & Reels (Unsplash <-> Pexels)
+- Cinematic TTS via ElevenLabs API (with Edge-TTS Failover)
 - Pillow ANTIALIAS monkeypatch for MoviePy compatibility
 - Unbuffered execution for transparent GitHub Actions logging
 """
@@ -37,6 +38,7 @@ INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 PEXELS_API_KEY         = os.environ.get("PEXELS_API_KEY", "")
 UNSPLASH_ACCESS_KEY    = os.environ.get("UNSPLASH_ACCESS_KEY", "")
+ELEVENLABS_API_KEY     = os.environ.get("ELEVENLABS_API_KEY", "")
 MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
 CLOUDINARY_URL         = os.environ.get("CLOUDINARY_URL", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo").lower()
@@ -289,21 +291,57 @@ def create_photo_image(data: dict, poet: dict) -> str:
     return fname
 
 # ============================================================
-# STEP 4: Edge TTS Audio Generator
+# STEP 4: Audio Engine (ElevenLabs -> Edge-TTS Fallback)
 # ============================================================
-def generate_tts(text: str, output_path: str) -> bool:
-    print("🎙️ Generating Urdu Edge-TTS audio...")
+def generate_tts(data: dict, output_path: str) -> bool:
+    """Attempts ElevenLabs first, then falls back to Edge-TTS on failure."""
+    
+    # --- PRIMARY: ELEVENLABS ---
+    if ELEVENLABS_API_KEY:
+        try:
+            print("🎙️ Attempting Cinematic ElevenLabs Audio...")
+            from elevenlabs.client import ElevenLabs
+            from elevenlabs import save
+
+            client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+            
+            # The Multilingual model handles Roman Urdu wonderfully. 
+            # We add ellipsis for dramatic breathing pauses.
+            text_to_speak = data["sher_roman"].replace("\n", "... ")
+            
+            # "Callum" is a great deep narrator. Change to any Voice ID.
+            audio_generator = client.generate(
+                text=text_to_speak,
+                voice="Callum",
+                model="eleven_multilingual_v2",
+            )
+            
+            save(audio_generator, output_path)
+            print(f"✅ ElevenLabs Audio generated at: {output_path}")
+            return True
+            
+        except Exception as e:
+            print(f"⚠️ ElevenLabs Failed ({e}). Falling back to Edge-TTS...")
+
+    # --- FALLBACK: EDGE-TTS ---
+    print("🎙️ Using Edge-TTS as fallback...")
     try:
         import asyncio
         import edge_tts
 
+        # Edge-TTS parses native Urdu script best. 
+        # Forcing commas/periods makes it breathe/pause between lines.
+        text_to_speak = data["sher_urdu"].replace("\n", ".... ")
+
         async def _speak():
-            communicate = edge_tts.Communicate(text, "ur-PK-AsadNeural", rate="-10%", pitch="-4Hz")
+            # Slowing rate down and dropping pitch gives it gravitas
+            communicate = edge_tts.Communicate(text_to_speak, "ur-PK-AsadNeural", rate="-15%", pitch="-6Hz")
             await communicate.save(output_path)
 
         asyncio.run(_speak())
-        print(f"✅ Audio generated at: {output_path}")
+        print(f"✅ Edge-TTS Audio generated at: {output_path}")
         return True
+        
     except Exception as e:
         print(f"❌ Edge-TTS Audio Generation Failed: {e}")
         return False
@@ -500,7 +538,7 @@ def run():
         tts_path = f"output/tts_{int(time.time())}.mp3"
         os.makedirs("output", exist_ok=True)
         
-        has_tts = generate_tts(data["sher_urdu"], tts_path)
+        has_tts = generate_tts(data, tts_path)
         if not has_tts:
             print("❌ FATAL: TTS audio failed. Exiting.")
             sys.exit(1)
