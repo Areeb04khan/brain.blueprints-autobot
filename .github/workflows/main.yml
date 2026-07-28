@@ -64,8 +64,10 @@ jobs:
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           POST_TYPE: ${{ steps.post_type.outputs.type }}
           MEDIA_HOST: tempfile
           MAX_RETRIES: "2"
           RETRY_DELAY_SECONDS: "60"
         run: python -u poster.py
+        
