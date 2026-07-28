@@ -291,33 +291,37 @@ def create_photo_image(data: dict, poet: dict) -> str:
     return fname
 
 # ============================================================
+# ============================================================
 # STEP 4: Audio Engine (ElevenLabs -> Edge-TTS Fallback)
 # ============================================================
-def generate_tts(data: dict, output_path: str) -> bool:
-    """Attempts ElevenLabs first, then falls back to Edge-TTS on failure."""
+def generate_tts(data: dict) -> list:
+    """Generates separate audio files for each line to guarantee dramatic pauses."""
     
-       # --- PRIMARY: ELEVENLABS ---
+    # 1. Define the lines FIRST (This was missing!)
+    lines = [line.strip() for line in data["sher_urdu"].split("\n") if line.strip()]
+    if len(lines) < 2:
+        lines = [data["sher_urdu"]]
+        
+    output_paths = []
+    
+    # --- PRIMARY: ELEVENLABS ---
     if ELEVENLABS_API_KEY:
         try:
             print("🎙️ Attempting Cinematic ElevenLabs Audio (Native Urdu Script)...")
             from elevenlabs.client import ElevenLabs
-
-            # 1. Initialize the new V1 client
+            
             client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
             
             for i, line in enumerate(lines):
                 out_path = f"output/tts_line_{i}_{int(time.time())}.mp3"
                 
-                # 2. Use the new client.text_to_speech.convert() method
-                # "N2lVS1w4EtoT3dr4eOWO" is the official Voice ID for "Callum"
                 audio_stream = client.text_to_speech.convert(
                     text=line,
-                    voice_id="N2lVS1w4EtoT3dr4eOWO",
+                    voice_id="N2lVS1w4EtoT3dr4eOWO", # Callum Voice ID
                     model_id="eleven_multilingual_v2",
                     output_format="mp3_44100_128"
                 )
                 
-                # 3. Manually save the byte stream to an MP3 file
                 with open(out_path, "wb") as f:
                     for chunk in audio_stream:
                         if chunk:
@@ -332,29 +336,27 @@ def generate_tts(data: dict, output_path: str) -> bool:
             print(f"⚠️ ElevenLabs Failed ({e}). Falling back to Edge-TTS...")
             output_paths = [] # Clear paths on failure to trigger fallback
 
-
     # --- FALLBACK: EDGE-TTS ---
     print("🎙️ Using Edge-TTS as fallback...")
     try:
         import asyncio
         import edge_tts
 
-        # Edge-TTS parses native Urdu script best. 
-        # Forcing commas/periods makes it breathe/pause between lines.
-        text_to_speak = data["sher_urdu"].replace("\n", ".... ")
-
         async def _speak():
-            # Slowing rate down and dropping pitch gives it gravitas
-            communicate = edge_tts.Communicate(text_to_speak, "ur-PK-AsadNeural", rate="-15%", pitch="-6Hz")
-            await communicate.save(output_path)
+            for i, line in enumerate(lines):
+                out_path = f"output/tts_line_{i}_{int(time.time())}.mp3"
+                communicate = edge_tts.Communicate(line, "ur-PK-AsadNeural", rate="-15%", pitch="-6Hz")
+                await communicate.save(out_path)
+                output_paths.append(out_path)
 
         asyncio.run(_speak())
-        print(f"✅ Edge-TTS Audio generated at: {output_path}")
-        return True
+        print(f"✅ Edge-TTS Audio generated: {len(output_paths)} lines.")
+        return output_paths
         
     except Exception as e:
         print(f"❌ Edge-TTS Audio Generation Failed: {e}")
-        return False
+        return []
+
 
 # ============================================================
 # STEP 5: Reel Video Studio
