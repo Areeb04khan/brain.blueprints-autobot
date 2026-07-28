@@ -536,6 +536,7 @@ def save_progress(p: dict):
     with open("progress.json", "w") as f: json.dump(p, f, indent=2)
 
 # ============================================================
+# ============================================================
 # MAIN EXECUTION
 # ============================================================
 def run():
@@ -560,17 +561,15 @@ def run():
         if success:
             p["poet_index"] += 1
 
-        elif POST_TYPE == "reel":
+    elif POST_TYPE == "reel":
         os.makedirs("output", exist_ok=True)
         
-        # FIX: Now it only takes 'data' and returns a list of 'tts_paths'
         tts_paths = generate_tts(data)
         
         if not tts_paths:
             print("❌ FATAL: TTS audio failed. Exiting.")
             sys.exit(1)
 
-        # FIX: We pass the list of paths directly to the reel creator
         reel_path = create_reel_video(data, poet, tts_paths)
         
         if reel_path:
@@ -578,7 +577,6 @@ def run():
         else:
             print("❌ FATAL: Reel video rendering failed.")
             sys.exit(1)
-
 
     if success:
         p["total_posts"] += 1
