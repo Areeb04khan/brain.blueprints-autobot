@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: progress.json
-          key: progress-${{ github.run_number }}
+          key: progress-${{ github.run_id }}-${{ github.run_number }}
           restore-keys: |
             progress-
 
@@ -62,15 +62,10 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           POST_TYPE: ${{ steps.post_type.outputs.type }}
           MEDIA_HOST: tempfile
           MAX_RETRIES: "2"
           RETRY_DELAY_SECONDS: "60"
-        run: python poster.py
-
-      - name: Save progress
-        uses: actions/cache/save@v4
-        if: always()
-        with:
-          path: progress.json
-          key: progress-${{ github.run_number }}
+        run: python -u poster.py
+        
