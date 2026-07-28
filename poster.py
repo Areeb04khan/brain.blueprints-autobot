@@ -296,32 +296,42 @@ def create_photo_image(data: dict, poet: dict) -> str:
 def generate_tts(data: dict, output_path: str) -> bool:
     """Attempts ElevenLabs first, then falls back to Edge-TTS on failure."""
     
-    # --- PRIMARY: ELEVENLABS ---
+       # --- PRIMARY: ELEVENLABS ---
     if ELEVENLABS_API_KEY:
         try:
-            print("🎙️ Attempting Cinematic ElevenLabs Audio...")
+            print("🎙️ Attempting Cinematic ElevenLabs Audio (Native Urdu Script)...")
             from elevenlabs.client import ElevenLabs
-            from elevenlabs import save
 
+            # 1. Initialize the new V1 client
             client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
             
-            # The Multilingual model handles Roman Urdu wonderfully. 
-            # We add ellipsis for dramatic breathing pauses.
-            text_to_speak = data["sher_roman"].replace("\n", "... ")
-            
-            # "Callum" is a great deep narrator. Change to any Voice ID.
-            audio_generator = client.generate(
-                text=text_to_speak,
-                voice="Callum",
-                model="eleven_multilingual_v2",
-            )
-            
-            save(audio_generator, output_path)
-            print(f"✅ ElevenLabs Audio generated at: {output_path}")
-            return True
+            for i, line in enumerate(lines):
+                out_path = f"output/tts_line_{i}_{int(time.time())}.mp3"
+                
+                # 2. Use the new client.text_to_speech.convert() method
+                # "N2lVS1w4EtoT3dr4eOWO" is the official Voice ID for "Callum"
+                audio_stream = client.text_to_speech.convert(
+                    text=line,
+                    voice_id="N2lVS1w4EtoT3dr4eOWO",
+                    model_id="eleven_multilingual_v2",
+                    output_format="mp3_44100_128"
+                )
+                
+                # 3. Manually save the byte stream to an MP3 file
+                with open(out_path, "wb") as f:
+                    for chunk in audio_stream:
+                        if chunk:
+                            f.write(chunk)
+                            
+                output_paths.append(out_path)
+                
+            print(f"✅ ElevenLabs Audio generated: {len(output_paths)} lines.")
+            return output_paths
             
         except Exception as e:
             print(f"⚠️ ElevenLabs Failed ({e}). Falling back to Edge-TTS...")
+            output_paths = [] # Clear paths on failure to trigger fallback
+
 
     # --- FALLBACK: EDGE-TTS ---
     print("🎙️ Using Edge-TTS as fallback...")
