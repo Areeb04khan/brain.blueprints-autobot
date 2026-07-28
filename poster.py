@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Shayari Instagram Bot v5.3 (Pillow 10+ Patch & Variable Safety Fix)
+Shayari Instagram Bot v5.5 (Unsplash + Pexels Cross-Fallback Dual Engine)
 - Real authentic Shayari via Gemini 2.5 Flash
-- Pexels API 4K video backgrounds
+- Dynamic cross-fallback media engine for both Photos & Reels (Unsplash <-> Pexels)
 - Pillow ANTIALIAS monkeypatch for MoviePy compatibility
-- Robust error handling with zero unbound variable crashes
+- Unbuffered execution for transparent GitHub Actions logging
 """
 
 # ============================================================
@@ -36,6 +36,7 @@ GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 PEXELS_API_KEY         = os.environ.get("PEXELS_API_KEY", "")
+UNSPLASH_ACCESS_KEY    = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
 CLOUDINARY_URL         = os.environ.get("CLOUDINARY_URL", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "photo").lower()
@@ -94,7 +95,7 @@ def generate_content(poet: dict) -> dict:
         "2. Roman Urdu transliteration (sher_roman) - MAX 2 lines.\n"
         "3. Exact Urdu script (sher_urdu) for audio synthesis.\n"
         "4. Poetic English translation (english_translation) - MAX 1 line.\n"
-        "5. Pexels video query (pexels_query) - e.g. 'dark rain', 'night city', 'cozy window'.\n"
+        "5. Search query (search_query) for dark aesthetic background imagery (e.g., 'dark rain night', 'misty road', 'coffee shadow', 'vintage book').\n"
         "6. Short caption story.\n\n"
         "Return ONLY valid JSON:\n"
         "{\n"
@@ -103,7 +104,7 @@ def generate_content(poet: dict) -> dict:
         '  "sher_urdu": "...",\n'
         '  "english_translation": "...",\n'
         '  "emotion": "dard",\n'
-        '  "pexels_query": "dark rain",\n'
+        '  "search_query": "dark rain night",\n'
         '  "caption": "..."\n'
         "}"
     )
@@ -115,35 +116,134 @@ def generate_content(poet: dict) -> dict:
     return data
 
 # ============================================================
-# STEP 2: Stock Video Retriever (Pexels)
+# STEP 2: Dual Media Engine (Unsplash + Pexels with Cross-Fallback)
 # ============================================================
-def fetch_pexels_background_video(query: str, target_dir: str = "output") -> str:
-    if not PEXELS_API_KEY:
-        print("ℹ️ PEXELS_API_KEY is not set. Using fallback background.")
+def fetch_unsplash_photo(query: str) -> str:
+    if not UNSPLASH_ACCESS_KEY:
         return None
-
     try:
-        print(f"🎬 Fetching Pexels vertical video for query: '{query}'...")
+        print(f"📷 Fetching photo from Unsplash: '{query}'...")
+        headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
+        url = f"https://api.unsplash.com/photos/random?query={query}&orientation=squarish"
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.ok:
+            img_url = res.json().get("urls", {}).get("regular")
+            if img_url:
+                p_path = f"output/unsplash_{int(time.time())}.jpg"
+                with open(p_path, "wb") as f:
+                    f.write(requests.get(img_url, timeout=30).content)
+                print(f"✅ Downloaded Unsplash Photo: {p_path}")
+                return p_path
+    except Exception as e:
+        print(f"⚠️ Unsplash photo fetch error: {e}")
+    return None
+
+def fetch_pexels_photo(query: str) -> str:
+    if not PEXELS_API_KEY:
+        return None
+    try:
+        print(f"📷 Fetching photo from Pexels: '{query}'...")
+        headers = {"Authorization": PEXELS_API_KEY}
+        url = f"https://api.pexels.com/v1/search?query={query}&orientation=square&per_page=5"
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.ok:
+            photos = res.json().get("photos", [])
+            if photos:
+                img_url = random.choice(photos).get("src", {}).get("large2x")
+                if img_url:
+                    p_path = f"output/pexels_img_{int(time.time())}.jpg"
+                    with open(p_path, "wb") as f:
+                        f.write(requests.get(img_url, timeout=30).content)
+                    print(f"✅ Downloaded Pexels Photo: {p_path}")
+                    return p_path
+    except Exception as e:
+        print(f"⚠️ Pexels photo fetch error: {e}")
+    return None
+
+def get_photo_background(query: str) -> str:
+    """Randomly chooses Unsplash or Pexels as primary, using the other as fallback."""
+    os.makedirs("output", exist_ok=True)
+    providers = [fetch_unsplash_photo, fetch_pexels_photo]
+    random.shuffle(providers) # Randomize primary provider
+
+    for fetch_func in providers:
+        img_path = fetch_func(query)
+        if img_path and os.path.exists(img_path):
+            return img_path
+
+    print("ℹ️ Both Unsplash and Pexels failed for photo. Using dark solid background fallback.")
+    return None
+
+def fetch_pexels_video(query: str) -> str:
+    if not PEXELS_API_KEY:
+        return None
+    try:
+        print(f"🎬 Fetching video from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
         url = f"https://api.pexels.com/videos/search?query={query}&orientation=portrait&per_page=5"
         res = requests.get(url, headers=headers, timeout=10)
-        
         if res.ok:
             videos = res.json().get("videos", [])
             if videos:
                 video = random.choice(videos)
                 for vf in video.get("video_files", []):
                     if vf.get("file_type") == "video/mp4" and vf.get("width", 0) >= 720:
-                        os.makedirs(target_dir, exist_ok=True)
-                        v_path = os.path.join(target_dir, f"bg_{int(time.time())}.mp4")
-                        v_data = requests.get(vf["link"], timeout=30).content
+                        v_path = f"output/pexels_vid_{int(time.time())}.mp4"
                         with open(v_path, "wb") as f:
-                            f.write(v_data)
-                        print(f"✅ Downloaded Pexels Background Video: {v_path}")
+                            f.write(requests.get(vf["link"], timeout=30).content)
+                        print(f"✅ Downloaded Pexels Video: {v_path}")
                         return v_path
     except Exception as e:
-        print(f"⚠️ Pexels Fetch Exception: {e}")
+        print(f"⚠️ Pexels video fetch error: {e}")
     return None
+
+def fetch_unsplash_video_equivalent(query: str) -> str:
+    """
+    Unsplash does not provide videos, so it converts a high-res portrait photo
+    from Unsplash into a background image for video compositing.
+    """
+    if not UNSPLASH_ACCESS_KEY:
+        return None
+    try:
+        print(f"🎬 Fetching vertical image from Unsplash for Reel: '{query}'...")
+        headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
+        url = f"https://api.unsplash.com/photos/random?query={query}&orientation=portrait"
+        res = requests.get(url, headers=headers, timeout=10)
+        if res.ok:
+            img_url = res.json().get("urls", {}).get("regular")
+            if img_url:
+                p_path = f"output/unsplash_portrait_{int(time.time())}.jpg"
+                with open(p_path, "wb") as f:
+                    f.write(requests.get(img_url, timeout=30).content)
+                print(f"✅ Downloaded Unsplash Portrait Image for Reel: {p_path}")
+                return p_path
+    except Exception as e:
+        print(f"⚠️ Unsplash vertical image fetch error: {e}")
+    return None
+
+def get_reel_background(query: str) -> tuple:
+    """
+    Returns (path, is_video_file).
+    Randomly attempts Pexels Video or Unsplash Portrait Image with cross-fallback.
+    """
+    os.makedirs("output", exist_ok=True)
+    
+    # Try Video First (Pexels) 50% of the time, or Vertical Unsplash Image 50% of the time
+    choice = random.choice(["pexels", "unsplash"])
+
+    if choice == "pexels":
+        v_path = fetch_pexels_video(query)
+        if v_path: return (v_path, True)
+        u_path = fetch_unsplash_video_equivalent(query)
+        if u_path: return (u_path, False)
+    else:
+        u_path = fetch_unsplash_video_equivalent(query)
+        if u_path: return (u_path, False)
+        v_path = fetch_pexels_video(query)
+        if v_path: return (v_path, True)
+
+    print("ℹ️ Both video sources failed. Using clean dark canvas fallback.")
+    return (None, False)
 
 # ============================================================
 # STEP 3: Photo Renderer (1080x1080)
@@ -153,7 +253,16 @@ def create_photo_image(data: dict, poet: dict) -> str:
     W, H = 1080, 1080
     palette = EMOTION_PALETTES.get(data.get("emotion","dard"), DEFAULT_PALETTE)
 
-    img = Image.new("RGB", (W, H), color=palette["bg"])
+    bg_photo_path = get_photo_background(data.get("search_query", "dark rain"))
+
+    if bg_photo_path and os.path.exists(bg_photo_path):
+        base_img = Image.open(bg_photo_path).convert("RGBA")
+        base_img = base_img.resize((W, H), Image.Resampling.LANCZOS)
+        dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 160)) # Translucent dark overlay
+        img = Image.alpha_composite(base_img, dark_overlay).convert("RGB")
+    else:
+        img = Image.new("RGB", (W, H), color=palette["bg"])
+
     draw = ImageDraw.Draw(img)
 
     try:
@@ -169,23 +278,22 @@ def create_photo_image(data: dict, poet: dict) -> str:
         tw = bbox[2] - bbox[0]
         draw.text(((W - tw) / 2, y), text, font=font, fill=color)
 
-    center(f"-- {poet['name']} --", 120, font_poet, palette["accent"])
+    center(f"-- {poet['name']} --", 120, font_poet, "#E0C080")
     
     lines = data["sher_roman"].strip().split("\n")
     y_pos = 380
     for line in lines:
         for wline in textwrap.wrap(line, width=32):
-            center(wline, y_pos, font_sher, palette["text"])
+            center(wline, y_pos, font_sher, "#FFFFFF")
             y_pos += 65
 
     y_pos += 50
     for tline in textwrap.wrap(f'"{data["english_translation"]}"', width=48):
-        center(tline, y_pos, font_trans, palette["accent"])
+        center(tline, y_pos, font_trans, "#D0D0D0")
         y_pos += 35
 
-    center(IG_HANDLE, 960, font_brand, palette["sub"])
+    center(IG_HANDLE, 960, font_brand, "#AAAAAA")
 
-    os.makedirs("output", exist_ok=True)
     fname = f"output/photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     img.save(fname, "JPEG", quality=95)
     print(f"✅ Photo rendered at: {fname}")
@@ -223,17 +331,23 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
         tts_audio = AudioFileClip(tts_path)
         duration = min(tts_audio.duration + 3, 30)
 
-        # 1. Background Video
-        bg_video_path = fetch_pexels_background_video(data.get("pexels_query", "dark rain"))
+        # 1. Background Media Setup
+        bg_path, is_video = get_reel_background(data.get("search_query", "dark rain"))
         
-        if bg_video_path:
-            bg_clip = VideoFileClip(bg_video_path).subclip(0, duration).resize(height=1920)
+        if bg_path and is_video:
+            bg_clip = VideoFileClip(bg_path).subclip(0, duration).resize(height=1920)
             if bg_clip.w < 1080: bg_clip = bg_clip.resize(width=1080)
             bg_clip = bg_clip.crop(x_center=bg_clip.w/2, y_center=bg_clip.h/2, width=1080, height=1920)
             bg_clip = bg_clip.fl_image(lambda image: (image * 0.4).astype(np.uint8))
+        elif bg_path and not is_video:
+            bg_img = Image.open(bg_path).convert("RGBA").resize((1080, 1920), Image.Resampling.LANCZOS)
+            dark_overlay = Image.new("RGBA", (1080, 1920), (10, 10, 20, 160))
+            bg_img = Image.alpha_composite(bg_img, dark_overlay).convert("RGB")
+            bg_img_path = "output/reel_bg_img.jpg"
+            bg_img.save(bg_img_path)
+            bg_clip = ImageClip(bg_img_path, duration=duration)
         else:
             clean_bg = Image.new("RGB", (1080, 1920), color="#0a0a14")
-            os.makedirs("output", exist_ok=True)
             clean_bg_path = "output/clean_bg.jpg"
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
@@ -247,7 +361,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
                 music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.15)
                 final_audio = CompositeAudioClip([tts_audio.volumex(1.0), music])
 
-        # 3. Transparent Text Overlay
+        # 3. Transparent Text Overlay Layer
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
         
@@ -347,77 +461,4 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
         print("📤 Publishing to Instagram...")
         p_res = requests.post(f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish", data={"creation_id": container_id, "access_token": INSTAGRAM_ACCESS_TOKEN}).json()
         if "id" in p_res:
-            print(f"🎉 Published Successfully! Instagram Post ID: {p_res['id']}")
-            return True
-        else:
-            print(f"❌ Instagram Publish Error: {p_res}")
-            return False
-
-    except Exception as e:
-        print(f"❌ Instagram API Failure: {e}")
-        return False
-
-# ============================================================
-# STATE TRACKING
-# ============================================================
-def load_progress() -> dict:
-    if os.path.exists("progress.json"):
-        with open("progress.json") as f: return json.load(f)
-    return {"poet_index": 0, "total_posts": 0}
-
-def save_progress(p: dict):
-    with open("progress.json", "w") as f: json.dump(p, f, indent=2)
-
-# ============================================================
-# MAIN EXECUTION
-# ============================================================
-def run():
-    validate_environment()
-    p = load_progress()
-    poet = POET_SCHEDULE[p["poet_index"] % len(POET_SCHEDULE)]
-
-    print(f"\n=======================================================")
-    print(f"🚀 STARTING WORKFLOW: [{POST_TYPE.upper()}] for {poet['name']}")
-    print(f"=======================================================\n")
-
-    data = generate_content(poet)
-
-    hook_str = data.get("hook") or ""
-    caption = f"{hook_str}\n\n{data['sher_roman']}\n\n-- {poet['name']}\n\n{data.get('caption','')}\n\n#urdushayari #hindishayari #poetry #relatable"
-
-    # Explicitly initialize success to prevent UnboundLocalError
-    success = False
-
-    if POST_TYPE == "photo":
-        img_path = create_photo_image(data, poet)
-        success = post_to_instagram(img_path, caption, is_video=False)
-        if success:
-            p["poet_index"] += 1
-
-    elif POST_TYPE == "reel":
-        tts_path = f"output/tts_{int(time.time())}.mp3"
-        os.makedirs("output", exist_ok=True)
-        
-        has_tts = generate_tts(data["sher_urdu"], tts_path)
-        if not has_tts:
-            print("❌ FATAL: TTS audio failed. Exiting.")
-            sys.exit(1)
-
-        reel_path = create_reel_video(data, poet, tts_path)
-        if reel_path:
-            success = post_to_instagram(reel_path, caption, is_video=True)
-        else:
-            print("❌ FATAL: Reel video rendering failed.")
-            sys.exit(1)
-
-    if success:
-        p["total_posts"] += 1
-        save_progress(p)
-        print("\n✅ WORKFLOW COMPLETED SUCCESSFULLY!")
-    else:
-        print("\n❌ WORKFLOW FAILED TO POST TO INSTAGRAM.")
-        sys.exit(1)
-
-if __name__ == "__main__":
-    run()
-            
+            print(f"🎉 
