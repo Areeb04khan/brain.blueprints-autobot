@@ -2,7 +2,7 @@
 """
 Shayari Instagram Bot v5.5 (Unsplash + Pexels Cross-Fallback Dual Engine)
 - Real authentic Shayari via Gemini 2.5 Flash
-- Dynamic cross-fallback media engine for both Photos & Reels (Unsplash <-> Pexels)
+- Dynamic cross-fallback media engine for Photos & Reels (Unsplash <-> Pexels)
 - Pillow ANTIALIAS monkeypatch for MoviePy compatibility
 - Unbuffered execution for transparent GitHub Actions logging
 """
@@ -116,7 +116,7 @@ def generate_content(poet: dict) -> dict:
     return data
 
 # ============================================================
-# STEP 2: Dual Media Engine (Unsplash + Pexels with Cross-Fallback)
+# STEP 2: Dual Media Engine (Unsplash + Pexels Cross-Fallback)
 # ============================================================
 def fetch_unsplash_photo(query: str) -> str:
     if not UNSPLASH_ACCESS_KEY:
@@ -161,10 +161,9 @@ def fetch_pexels_photo(query: str) -> str:
     return None
 
 def get_photo_background(query: str) -> str:
-    """Randomly chooses Unsplash or Pexels as primary, using the other as fallback."""
     os.makedirs("output", exist_ok=True)
     providers = [fetch_unsplash_photo, fetch_pexels_photo]
-    random.shuffle(providers) # Randomize primary provider
+    random.shuffle(providers)
 
     for fetch_func in providers:
         img_path = fetch_func(query)
@@ -198,10 +197,6 @@ def fetch_pexels_video(query: str) -> str:
     return None
 
 def fetch_unsplash_video_equivalent(query: str) -> str:
-    """
-    Unsplash does not provide videos, so it converts a high-res portrait photo
-    from Unsplash into a background image for video compositing.
-    """
     if not UNSPLASH_ACCESS_KEY:
         return None
     try:
@@ -222,13 +217,7 @@ def fetch_unsplash_video_equivalent(query: str) -> str:
     return None
 
 def get_reel_background(query: str) -> tuple:
-    """
-    Returns (path, is_video_file).
-    Randomly attempts Pexels Video or Unsplash Portrait Image with cross-fallback.
-    """
     os.makedirs("output", exist_ok=True)
-    
-    # Try Video First (Pexels) 50% of the time, or Vertical Unsplash Image 50% of the time
     choice = random.choice(["pexels", "unsplash"])
 
     if choice == "pexels":
@@ -258,7 +247,7 @@ def create_photo_image(data: dict, poet: dict) -> str:
     if bg_photo_path and os.path.exists(bg_photo_path):
         base_img = Image.open(bg_photo_path).convert("RGBA")
         base_img = base_img.resize((W, H), Image.Resampling.LANCZOS)
-        dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 160)) # Translucent dark overlay
+        dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 160))
         img = Image.alpha_composite(base_img, dark_overlay).convert("RGB")
     else:
         img = Image.new("RGB", (W, H), color=palette["bg"])
@@ -331,7 +320,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
         tts_audio = AudioFileClip(tts_path)
         duration = min(tts_audio.duration + 3, 30)
 
-        # 1. Background Media Setup
+        # Background Setup
         bg_path, is_video = get_reel_background(data.get("search_query", "dark rain"))
         
         if bg_path and is_video:
@@ -352,7 +341,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
 
-        # 2. Audio Layering
+        # Audio Layering
         music_dir = "music"
         final_audio = tts_audio
         if os.path.exists(music_dir):
@@ -361,7 +350,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
                 music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.15)
                 final_audio = CompositeAudioClip([tts_audio.volumex(1.0), music])
 
-        # 3. Transparent Text Overlay Layer
+        # Transparent Text Overlay Layer
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
         
@@ -389,7 +378,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
 
         txt_clip = ImageClip(overlay_fname, duration=duration)
 
-        # 4. Composite Video
+        # Composite Final Video
         final_video = CompositeVideoClip([bg_clip, txt_clip]).set_audio(final_audio)
         reel_path = f"output/reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         
@@ -461,4 +450,75 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
         print("📤 Publishing to Instagram...")
         p_res = requests.post(f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish", data={"creation_id": container_id, "access_token": INSTAGRAM_ACCESS_TOKEN}).json()
         if "id" in p_res:
-            print(f"🎉 
+            print(f"🎉 Published Successfully! Instagram Post ID: {p_res['id']}")
+            return True
+        else:
+            print(f"❌ Instagram Publish Error: {p_res}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Instagram API Failure: {e}")
+        return False
+
+# ============================================================
+# STATE TRACKING
+# ============================================================
+def load_progress() -> dict:
+    if os.path.exists("progress.json"):
+        with open("progress.json") as f: return json.load(f)
+    return {"poet_index": 0, "total_posts": 0}
+
+def save_progress(p: dict):
+    with open("progress.json", "w") as f: json.dump(p, f, indent=2)
+
+# ============================================================
+# MAIN EXECUTION
+# ============================================================
+def run():
+    validate_environment()
+    p = load_progress()
+    poet = POET_SCHEDULE[p["poet_index"] % len(POET_SCHEDULE)]
+
+    print(f"\n=======================================================")
+    print(f"🚀 STARTING WORKFLOW: [{POST_TYPE.upper()}] for {poet['name']}")
+    print(f"=======================================================\n")
+
+    data = generate_content(poet)
+
+    hook_str = data.get("hook") or ""
+    caption = f"{hook_str}\n\n{data['sher_roman']}\n\n-- {poet['name']}\n\n{data.get('caption','')}\n\n#urdushayari #hindishayari #poetry #relatable"
+
+    success = False
+
+    if POST_TYPE == "photo":
+        img_path = create_photo_image(data, poet)
+        success = post_to_instagram(img_path, caption, is_video=False)
+        if success:
+            p["poet_index"] += 1
+
+    elif POST_TYPE == "reel":
+        tts_path = f"output/tts_{int(time.time())}.mp3"
+        os.makedirs("output", exist_ok=True)
+        
+        has_tts = generate_tts(data["sher_urdu"], tts_path)
+        if not has_tts:
+            print("❌ FATAL: TTS audio failed. Exiting.")
+            sys.exit(1)
+
+        reel_path = create_reel_video(data, poet, tts_path)
+        if reel_path:
+            success = post_to_instagram(reel_path, caption, is_video=True)
+        else:
+            print("❌ FATAL: Reel video rendering failed.")
+            sys.exit(1)
+
+    if success:
+        p["total_posts"] += 1
+        save_progress(p)
+        print("\n✅ WORKFLOW COMPLETED SUCCESSFULLY!")
+    else:
+        print("\n❌ WORKFLOW FAILED TO POST TO INSTAGRAM.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    run()
