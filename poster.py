@@ -560,21 +560,25 @@ def run():
         if success:
             p["poet_index"] += 1
 
-    elif POST_TYPE == "reel":
-        tts_path = f"output/tts_{int(time.time())}.mp3"
+        elif POST_TYPE == "reel":
         os.makedirs("output", exist_ok=True)
         
-        has_tts = generate_tts(data, tts_path)
-        if not has_tts:
+        # FIX: Now it only takes 'data' and returns a list of 'tts_paths'
+        tts_paths = generate_tts(data)
+        
+        if not tts_paths:
             print("❌ FATAL: TTS audio failed. Exiting.")
             sys.exit(1)
 
-        reel_path = create_reel_video(data, poet, tts_path)
+        # FIX: We pass the list of paths directly to the reel creator
+        reel_path = create_reel_video(data, poet, tts_paths)
+        
         if reel_path:
             success = post_to_instagram(reel_path, caption, is_video=True)
         else:
             print("❌ FATAL: Reel video rendering failed.")
             sys.exit(1)
+
 
     if success:
         p["total_posts"] += 1
