@@ -358,19 +358,32 @@ def generate_tts(data: dict) -> list:
         return []
 
 
-# ============================================================
+# ============================================================# ============================================================
 # STEP 5: Reel Video Studio
 # ============================================================
-def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
+def create_reel_video(data: dict, poet: dict, tts_paths: list) -> str:
     print("🎬 Compositing 1080x1920 Reel Video with MoviePy...")
     try:
-        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip
+        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip, concatenate_audioclips
         import numpy as np
 
-        tts_audio = AudioFileClip(tts_path)
+        # 1. Stitch Audio Lines with a 1-Second Dramatic Pause
+        audio_clips = []
+        
+        # Create a 1-second silent audio clip using the first line as a template
+        base_clip = AudioFileClip(tts_paths[0])
+        silence = base_clip.subclip(0, min(0.1, base_clip.duration)).volumex(0) 
+        silence = concatenate_audioclips([silence] * 10) # ~1.0 second silence
+        
+        for i, path in enumerate(tts_paths):
+            audio_clips.append(AudioFileClip(path))
+            if i < len(tts_paths) - 1:
+                audio_clips.append(silence)
+                
+        tts_audio = concatenate_audioclips(audio_clips)
         duration = min(tts_audio.duration + 3, 30)
 
-        # Background Setup
+        # 2. Background Setup
         bg_path, is_video = get_reel_background(data.get("search_query", "dark rain"))
         
         if bg_path and is_video:
@@ -382,16 +395,16 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
             bg_img = Image.open(bg_path).convert("RGBA").resize((1080, 1920), Image.Resampling.LANCZOS)
             dark_overlay = Image.new("RGBA", (1080, 1920), (10, 10, 20, 160))
             bg_img = Image.alpha_composite(bg_img, dark_overlay).convert("RGB")
-            bg_img_path = "output/reel_bg_img.jpg"
+            bg_img_path = f"output/reel_bg_img_{int(time.time())}.jpg"
             bg_img.save(bg_img_path)
             bg_clip = ImageClip(bg_img_path, duration=duration)
         else:
             clean_bg = Image.new("RGB", (1080, 1920), color="#0a0a14")
-            clean_bg_path = "output/clean_bg.jpg"
+            clean_bg_path = f"output/clean_bg_{int(time.time())}.jpg"
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
 
-        # Audio Layering
+        # 3. Audio Layering (Voice + Background Music)
         music_dir = "music"
         final_audio = tts_audio
         if os.path.exists(music_dir):
@@ -400,7 +413,7 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
                 music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.15)
                 final_audio = CompositeAudioClip([tts_audio.volumex(1.0), music])
 
-        # Transparent Text Overlay Layer
+        # 4. Transparent Text Overlay Layer
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
         
@@ -411,33 +424,29 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
         except:
             font_hook = font_sher = font_poet = ImageFont.load_default()
 
-                # Draw Hook
+        # Draw Hook
         hook_text = textwrap.fill(data.get("hook", ""), width=32)
         draw.text((540, 380), hook_text, font=font_hook, fill="#E0E0E0", anchor="mm", align="center")
 
-        # Draw Sher (FIXED: Added text wrapping for long poetry lines)
+        # Draw Sher (Text wrapped for mobile boundaries)
         sher_lines = data["sher_roman"].strip().split("\n")
         wrapped_lines = []
         for line in sher_lines:
-            # Wrap at 30 characters so it stays safely inside mobile screen edges
             wrapped_lines.extend(textwrap.wrap(line, width=30)) 
         
         final_sher_text = "\n".join(wrapped_lines)
-        
-        # Added spacing=24 to give the text room to breathe vertically
         draw.text((540, 960), final_sher_text, font=font_sher, fill="#FFFFFF", anchor="mm", align="center", spacing=24)
 
         # Draw Poet & Brand
         draw.text((540, 1400), f"-- {poet['name']} --", font=font_poet, fill="#C0A060", anchor="mm")
         draw.text((540, 1750), IG_HANDLE, font=font_poet, fill="#888888", anchor="mm")
 
-
         overlay_fname = f"output/overlay_{int(time.time())}.png"
         overlay_img.save(overlay_fname)
 
         txt_clip = ImageClip(overlay_fname, duration=duration)
 
-        # Composite Final Video
+        # 5. Composite Final Video
         final_video = CompositeVideoClip([bg_clip, txt_clip]).set_audio(final_audio)
         reel_path = f"output/reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
         
