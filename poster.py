@@ -409,17 +409,26 @@ def create_reel_video(data: dict, poet: dict, tts_path: str) -> str:
         except:
             font_hook = font_sher = font_poet = ImageFont.load_default()
 
-        # Draw Hook
+                # Draw Hook
         hook_text = textwrap.fill(data.get("hook", ""), width=32)
         draw.text((540, 380), hook_text, font=font_hook, fill="#E0E0E0", anchor="mm", align="center")
 
-        # Draw Sher
-        sher_text = data["sher_roman"]
-        draw.text((540, 960), sher_text, font=font_sher, fill="#FFFFFF", anchor="mm", align="center")
+        # Draw Sher (FIXED: Added text wrapping for long poetry lines)
+        sher_lines = data["sher_roman"].strip().split("\n")
+        wrapped_lines = []
+        for line in sher_lines:
+            # Wrap at 30 characters so it stays safely inside mobile screen edges
+            wrapped_lines.extend(textwrap.wrap(line, width=30)) 
+        
+        final_sher_text = "\n".join(wrapped_lines)
+        
+        # Added spacing=24 to give the text room to breathe vertically
+        draw.text((540, 960), final_sher_text, font=font_sher, fill="#FFFFFF", anchor="mm", align="center", spacing=24)
 
         # Draw Poet & Brand
         draw.text((540, 1400), f"-- {poet['name']} --", font=font_poet, fill="#C0A060", anchor="mm")
         draw.text((540, 1750), IG_HANDLE, font=font_poet, fill="#888888", anchor="mm")
+
 
         overlay_fname = f"output/overlay_{int(time.time())}.png"
         overlay_img.save(overlay_fname)
