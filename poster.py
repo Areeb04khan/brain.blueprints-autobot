@@ -123,7 +123,7 @@ Return strictly valid JSON:
     print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
 
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.0-flash",
         contents=selected["system_prompt"]
     )
     
