@@ -2,12 +2,12 @@ name: Brain Blueprints Auto Poster
 
 on:
   schedule:
-    - cron: '0 07,15,23 * * *' # Runs thrice daily at 07AM ,03 PM and 11 PM UTC
-  workflow_dispatch: # Allows manual trigger from GitHub UI
+    - cron: '0 15 * * *' # Runs every day at 15:00 UTC
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout Code
@@ -21,9 +21,9 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip uninstall -y google-genai
-        pip install google-generativeai requests pillow moviepy numpy elevenlabs
-        
+        pip uninstall -y google-generativeai google-genai
+        pip install google-genai requests pillow moviepy numpy elevenlabs
+
     - name: Run Python Script
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -32,6 +32,6 @@ jobs:
         ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        POST_TYPE: "reel"
-        MEDIA_HOST: "tempfile"
+        POST_TYPE: reel
+        MEDIA_HOST: tempfile
       run: python -u poster.py

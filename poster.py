@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Brain Blueprints Instagram Bot v1.0
-- High-retention Psychology & Behavioral Science content via Gemini 2.0 Flash
+- High-retention Psychology & Behavioral Science content via Gemini 3.5 Flash
 - Rotating Viral Frameworks: Listicle, If/Then, Infinite Loop
 - Cinematic English Voiceover via ElevenLabs API (Marcus)
 - Dynamic Background Engine (Pexels Video / Unsplash Photo)
@@ -15,7 +15,7 @@ import PIL.Image
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = getattr(PIL.Image, 'Resampling', PIL.Image).LANCZOS
 
-import google.generativeai as genai
+from google import genai
 import requests
 import json
 import os
@@ -64,7 +64,7 @@ FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 def generate_content() -> dict:
     """Generates viral high-retention psychology content using 3 rotating frameworks."""
     print(f"🧠 Querying Gemini AI for @brain.blueprints content...")
-    genai.configure(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI_API_KEY)
     
     frameworks = [
         {
@@ -122,9 +122,10 @@ Return strictly valid JSON:
     selected = random.choice(frameworks)
     print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
 
-    
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    response = model.generate_content(selected["system_prompt"])
+    response = client.models.generate_content(
+        model="gemini-3.5-flash",
+        contents=selected["system_prompt"]
+    )
     
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
     data = json.loads(raw)
