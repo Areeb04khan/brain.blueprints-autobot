@@ -15,7 +15,7 @@ import PIL.Image
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = getattr(PIL.Image, 'Resampling', PIL.Image).LANCZOS
 
-from google import genai
+import google.generativeai as genai
 import requests
 import json
 import os
@@ -64,7 +64,7 @@ FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 def generate_content() -> dict:
     """Generates viral high-retention psychology content using 3 rotating frameworks."""
     print(f"🧠 Querying Gemini AI for @brain.blueprints content...")
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=GEMINI_API_KEY)
     
     frameworks = [
         {
@@ -122,10 +122,9 @@ Return strictly valid JSON:
     selected = random.choice(frameworks)
     print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
 
-    response = client.models.generate_content(
-        model="gemini-1.5-flash-8b",
-        contents=selected["system_prompt"]
-    )
+    
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    response = model.generate_content(selected["system_prompt"])
     
     raw = response.text.strip().replace("```json", "").replace("```", "").strip()
     data = json.loads(raw)
