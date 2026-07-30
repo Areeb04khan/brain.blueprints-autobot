@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../brain.blueprints"
+		},
+		{
+			"name": "brain.blueprints-autobot",
+			"path": "../brain.blueprints/brain.blueprints-autobot"
+		}
+	],
+	"settings": {}
+}

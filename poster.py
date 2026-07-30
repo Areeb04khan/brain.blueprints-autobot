@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Shayari Instagram Bot v5.6 (ElevenLabs + Edge-TTS Fallback)
-- Real authentic Shayari via Gemini 2.5 Flash
-- Dynamic cross-fallback media engine for Photos & Reels (Unsplash <-> Pexels)
-- Cinematic TTS via ElevenLabs API (with Edge-TTS Failover)
+Brain Blueprints Instagram Bot v1.0
+- High-retention Psychology & Behavioral Science content via Gemini 2.5 Flash
+- Rotating Viral Frameworks: Listicle, If/Then, Infinite Loop
+- Cinematic English Voiceover via ElevenLabs API (Marcus / Callum)
+- Dynamic Background Engine (Pexels Video / Unsplash Photo)
 - Pillow ANTIALIAS monkeypatch for MoviePy compatibility
-- Unbuffered execution for transparent GitHub Actions logging
 """
 
 # ============================================================
@@ -31,7 +31,7 @@ from urllib.parse import urlparse
 sys.stdout.reconfigure(line_buffering=True)
 
 # ============================================================
-# CONFIGURATION
+# CONFIGURATION & CONSTANTS
 # ============================================================
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
@@ -41,8 +41,10 @@ UNSPLASH_ACCESS_KEY    = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 ELEVENLABS_API_KEY     = os.environ.get("ELEVENLABS_API_KEY", "")
 MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
 CLOUDINARY_URL         = os.environ.get("CLOUDINARY_URL", "")
-POST_TYPE              = os.environ.get("POST_TYPE", "photo").lower()
-IG_HANDLE              = "@ak_apak"
+POST_TYPE              = os.environ.get("POST_TYPE", "reel").lower()
+
+IG_HANDLE              = "@brain.blueprints"
+ELEVENLABS_VOICE_ID    = "bVMeCyTHy58xNoL34h3p"  # Marcus (Authoritative Deep English)
 
 REQUIRED_ENV_VARS = ["GEMINI_API_KEY", "INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_USER_ID"]
 
@@ -56,73 +58,85 @@ FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
 FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-POET_SCHEDULE = [
-    {"name": "Mirza Ghalib", "era": "1797-1869"},
-    {"name": "Mir Taqi Mir", "era": "1723-1810"},
-    {"name": "Jaun Elia", "era": "1931-2002"},
-    {"name": "Faiz Ahmed Faiz", "era": "1911-1984"},
-    {"name": "Ahmad Faraz", "era": "1931-2008"},
-    {"name": "Parveen Shakir", "era": "1952-1994"},
-    {"name": "Rahat Indori", "era": "1950-2020"},
-    {"name": "Gulzar", "era": "1934-"}
-]
-
-EMOTION_PALETTES = {
-    "ishq":     {"bg":"#1a0010","text":"#f5c6d0","accent":"#e8587a","sub":"#b03060"},
-    "dard":     {"bg":"#0a0a1a","text":"#c8d4e8","accent":"#7090d0","sub":"#405080"},
-    "tanhai":   {"bg":"#060d0d","text":"#b8d8d8","accent":"#40a0a0","sub":"#206060"}
-}
-DEFAULT_PALETTE = EMOTION_PALETTES["dard"]
-
-VIRAL_HOOKS = [
-    "Read this twice if you're missing someone silently...",
-    "When {poet_name} said this, it hit differently...",
-    "For the nights when words fail you...",
-    "Send this to someone you can't text anymore."
-]
-
 # ============================================================
-# STEP 1: Gemini AI Content Generator
+# STEP 1: Gemini AI Content Generator (Rotating Frameworks)
 # ============================================================
-def generate_content(poet: dict) -> dict:
-    print(f"🧠 Querying Gemini AI for poet: {poet['name']}...")
+def generate_content() -> dict:
+    """Generates viral high-retention psychology content using 3 rotating frameworks."""
+    print(f"🧠 Querying Gemini AI for @brain.blueprints content...")
     client = genai.Client(api_key=GEMINI_API_KEY)
-    hook = random.choice(VIRAL_HOOKS).format(poet_name=poet['name'])
+    
+    frameworks = [
+        {
+            "type": "listicle",
+            "system_prompt": """Act as an expert behavioral psychologist. 
+Write a high-retention 3-part micro-listicle about dark psychology, body language, or social dynamics.
+Rules:
+1. The hook MUST promise that the 3rd point is the most important, dangerous, or shocking.
+2. Keep each point under 12 words so it reads fast on mobile screens.
+3. Total audio length must be under 12 seconds.
 
-    prompt = (
-        f"You run a high-engagement Instagram Shayari page.\n"
-        f"Poet: {poet['name']} ({poet['era']})\n\n"
-        "RULES:\n"
-        f"1. Give ONE famous 2-line couplet (sher) strictly by {poet['name']}.\n"
-        "2. Roman Urdu transliteration (sher_roman) - MAX 2 lines.\n"
-        "3. Exact Urdu script (sher_urdu) for audio synthesis.\n"
-        "4. Poetic English translation (english_translation) - MAX 1 line.\n"
-        "5. Search query (search_query) for dark aesthetic background imagery (e.g., 'dark rain night', 'misty road', 'coffee shadow', 'vintage book').\n"
-        "6. Short caption story.\n\n"
-        "Return ONLY valid JSON:\n"
-        "{\n"
-        f'  "hook": "{hook}",\n'
-        '  "sher_roman": "Line 1\\nLine 2",\n'
-        '  "sher_urdu": "...",\n'
-        '  "english_translation": "...",\n'
-        '  "emotion": "dard",\n'
-        '  "search_query": "dark rain night",\n'
-        '  "caption": "..."\n'
-        "}"
+Return strictly valid JSON:
+{
+  "hook": "3 body language signs someone is lying. Number 3 is almost impossible to fake...",
+  "script_english": "1. They stop making eye contact when answering.\\n2. Their speech speed suddenly changes.\\n3. They touch their neck to unconsciously soothe anxiety.",
+  "search_query": "dark moody city night street lights rain",
+  "caption": "Which of these have you noticed before? 🧠\\n\\nFollow @brain.blueprints for daily psychological insights."
+}"""
+        },
+        {
+            "type": "if_then",
+            "system_prompt": """Act as a psychoanalyst. 
+Write a deeply relatable 2-part 'If / Then' statement about human insecurity, habit, or social instinct.
+Rules:
+1. The 'If' statement must describe a very specific human behavior viewers thought only they did.
+2. The 'Then' statement must provide a mind-blowing psychological root cause.
+3. Total script must be under 15 seconds.
+
+Return strictly valid JSON:
+{
+  "hook": "If you do this, read carefully...",
+  "script_english": "If you randomly lose feelings for someone the moment they show interest in you...\\n\\nThen you don't fear commitment. You fear vulnerability because you believe your true self is unlovable.",
+  "search_query": "foggy forest moody dark landscape shadow",
+  "caption": "Save this for when you need a reality check. 🧠\\n\\nFollow @brain.blueprints for daily psychological insights."
+}"""
+        },
+        {
+            "type": "infinite_loop",
+            "system_prompt": """Act as a social tactics expert. 
+Write a punchy, 3-sentence psychological tip for commanding respect or detecting deception.
+Rules:
+1. CRITICAL: The very last sentence MUST end mid-thought or grammatically flow directly into the first word of the hook to create an unnoticeable 100% audio loop!
+2. Keep it under 10 seconds total.
+
+Return strictly valid JSON:
+{
+  "hook": "2 tricks to instantly command a room...",
+  "script_english": "First, lower your tone at the end of sentences instead of raising it. Second, never break eye contact first during silence... which is why you need these...",
+  "search_query": "chess board dark lighting luxury minimal",
+  "caption": "Let the video loop twice to get it. 🧠\\n\\nFollow @brain.blueprints for daily psychological insights."
+}"""
+        }
+    ]
+
+    selected = random.choice(frameworks)
+    print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=selected["system_prompt"]
     )
-
-    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
-    raw = response.text.strip().replace("```json","").replace("```","").strip()
+    
+    raw = response.text.strip().replace("```json", "").replace("```", "").strip()
     data = json.loads(raw)
-    print(f"✅ Generated Sher successfully: {data.get('sher_roman', '')[:40]}...")
+    print(f"✅ Content generated successfully: '{data.get('hook', '')}'")
     return data
 
 # ============================================================
-# STEP 2: Dual Media Engine (Unsplash + Pexels Cross-Fallback)
+# STEP 2: Dual Media Engine (Pexels + Unsplash)
 # ============================================================
 def fetch_unsplash_photo(query: str) -> str:
-    if not UNSPLASH_ACCESS_KEY:
-        return None
+    if not UNSPLASH_ACCESS_KEY: return None
     try:
         print(f"📷 Fetching photo from Unsplash: '{query}'...")
         headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
@@ -134,15 +148,13 @@ def fetch_unsplash_photo(query: str) -> str:
                 p_path = f"output/unsplash_{int(time.time())}.jpg"
                 with open(p_path, "wb") as f:
                     f.write(requests.get(img_url, timeout=30).content)
-                print(f"✅ Downloaded Unsplash Photo: {p_path}")
                 return p_path
     except Exception as e:
         print(f"⚠️ Unsplash photo fetch error: {e}")
     return None
 
 def fetch_pexels_photo(query: str) -> str:
-    if not PEXELS_API_KEY:
-        return None
+    if not PEXELS_API_KEY: return None
     try:
         print(f"📷 Fetching photo from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
@@ -156,7 +168,6 @@ def fetch_pexels_photo(query: str) -> str:
                     p_path = f"output/pexels_img_{int(time.time())}.jpg"
                     with open(p_path, "wb") as f:
                         f.write(requests.get(img_url, timeout=30).content)
-                    print(f"✅ Downloaded Pexels Photo: {p_path}")
                     return p_path
     except Exception as e:
         print(f"⚠️ Pexels photo fetch error: {e}")
@@ -166,18 +177,13 @@ def get_photo_background(query: str) -> str:
     os.makedirs("output", exist_ok=True)
     providers = [fetch_unsplash_photo, fetch_pexels_photo]
     random.shuffle(providers)
-
     for fetch_func in providers:
         img_path = fetch_func(query)
-        if img_path and os.path.exists(img_path):
-            return img_path
-
-    print("ℹ️ Both Unsplash and Pexels failed for photo. Using dark solid background fallback.")
+        if img_path and os.path.exists(img_path): return img_path
     return None
 
 def fetch_pexels_video(query: str) -> str:
-    if not PEXELS_API_KEY:
-        return None
+    if not PEXELS_API_KEY: return None
     try:
         print(f"🎬 Fetching video from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
@@ -199,8 +205,7 @@ def fetch_pexels_video(query: str) -> str:
     return None
 
 def fetch_unsplash_video_equivalent(query: str) -> str:
-    if not UNSPLASH_ACCESS_KEY:
-        return None
+    if not UNSPLASH_ACCESS_KEY: return None
     try:
         print(f"🎬 Fetching vertical image from Unsplash for Reel: '{query}'...")
         headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
@@ -212,7 +217,6 @@ def fetch_unsplash_video_equivalent(query: str) -> str:
                 p_path = f"output/unsplash_portrait_{int(time.time())}.jpg"
                 with open(p_path, "wb") as f:
                     f.write(requests.get(img_url, timeout=30).content)
-                print(f"✅ Downloaded Unsplash Portrait Image for Reel: {p_path}")
                 return p_path
     except Exception as e:
         print(f"⚠️ Unsplash vertical image fetch error: {e}")
@@ -239,51 +243,45 @@ def get_reel_background(query: str) -> tuple:
 # ============================================================
 # STEP 3: Photo Renderer (1080x1080)
 # ============================================================
-def create_photo_image(data: dict, poet: dict) -> str:
+def create_photo_image(data: dict) -> str:
     print("🎨 Rendering 1080x1080 Photo Image...")
     W, H = 1080, 1080
-    palette = EMOTION_PALETTES.get(data.get("emotion","dard"), DEFAULT_PALETTE)
 
-    bg_photo_path = get_photo_background(data.get("search_query", "dark rain"))
+    bg_photo_path = get_photo_background(data.get("search_query", "dark moody city"))
 
     if bg_photo_path and os.path.exists(bg_photo_path):
-        base_img = Image.open(bg_photo_path).convert("RGBA")
-        base_img = base_img.resize((W, H), Image.Resampling.LANCZOS)
-        dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 160))
+        base_img = Image.open(bg_photo_path).convert("RGBA").resize((W, H), Image.Resampling.LANCZOS)
+        dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 180))
         img = Image.alpha_composite(base_img, dark_overlay).convert("RGB")
     else:
-        img = Image.new("RGB", (W, H), color=palette["bg"])
+        img = Image.new("RGB", (W, H), color="#0a0a14")
 
     draw = ImageDraw.Draw(img)
 
     try:
-        font_poet  = ImageFont.truetype(FONT_SERIF, 32)
-        font_sher  = ImageFont.truetype(FONT_SERIF, 44)
-        font_trans = ImageFont.truetype(FONT_ITALIC, 22)
-        font_brand = ImageFont.truetype(FONT_SANS, 18)
+        font_hook  = ImageFont.truetype(FONT_ITALIC, 32)
+        font_body  = ImageFont.truetype(FONT_SERIF, 40)
+        font_brand = ImageFont.truetype(FONT_SANS, 22)
     except:
-        font_poet = font_sher = font_trans = font_brand = ImageFont.load_default()
+        font_hook = font_body = font_brand = ImageFont.load_default()
 
     def center(text, y, font, color):
         bbox = draw.textbbox((0, 0), text, font=font)
         tw = bbox[2] - bbox[0]
         draw.text(((W - tw) / 2, y), text, font=font, fill=color)
 
-    center(f"-- {poet['name']} --", 120, font_poet, "#E0C080")
-    
-    lines = data["sher_roman"].strip().split("\n")
-    y_pos = 380
+    # Draw Hook
+    center(data.get("hook", ""), 150, font_hook, "#C0A060")
+
+    # Draw Main Script
+    lines = data["script_english"].strip().split("\n")
+    y_pos = 360
     for line in lines:
         for wline in textwrap.wrap(line, width=32):
-            center(wline, y_pos, font_sher, "#FFFFFF")
-            y_pos += 65
+            center(wline, y_pos, font_body, "#FFFFFF")
+            y_pos += 55
 
-    y_pos += 50
-    for tline in textwrap.wrap(f'"{data["english_translation"]}"', width=48):
-        center(tline, y_pos, font_trans, "#D0D0D0")
-        y_pos += 35
-
-    center(IG_HANDLE, 960, font_brand, "#AAAAAA")
+    center(IG_HANDLE, 960, font_brand, "#888888")
 
     fname = f"output/photo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
     img.save(fname, "JPEG", quality=95)
@@ -291,109 +289,67 @@ def create_photo_image(data: dict, poet: dict) -> str:
     return fname
 
 # ============================================================
-# ============================================================
-# STEP 4: Audio Engine (ElevenLabs -> Edge-TTS Fallback)
+# STEP 4: Audio Engine (ElevenLabs English Voice)
 # ============================================================
 def generate_tts(data: dict) -> list:
-    """Generates separate audio files for each line to guarantee dramatic pauses."""
+    """Generates continuous TTS audio for the script."""
+    print(f"🎙️ Generating ElevenLabs Audio (Voice ID: {ELEVENLABS_VOICE_ID})...")
+    os.makedirs("output", exist_ok=True)
     
-    # 1. Define the lines FIRST (This was missing!)
-    lines = [line.strip() for line in data["sher_urdu"].split("\n") if line.strip()]
-    if len(lines) < 2:
-        lines = [data["sher_urdu"]]
-        
-    output_paths = []
+    full_text = f"{data['hook']}... {data['script_english']}"
+    out_path = f"output/tts_full_{int(time.time())}.mp3"
     
-    # --- PRIMARY: ELEVENLABS ---
     if ELEVENLABS_API_KEY:
         try:
-            print("🎙️ Attempting Cinematic ElevenLabs Audio (Native Urdu Script)...")
-            from elevenlabs.client import ElevenLabs
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+            headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": ELEVENLABS_API_KEY
+            }
+            payload = {
+                "text": full_text,
+                "model_id": "eleven_multilingual_v2",
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
+            }
             
-            client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
-            
-            for i, line in enumerate(lines):
-                out_path = f"output/tts_line_{i}_{int(time.time())}.mp3"
-                
-                audio_stream = client.text_to_speech.convert(
-                    text=line,
-                    voice_id="N2lVS1w4EtoT3dr4eOWO", # Callum Voice ID
-                    model_id="eleven_multilingual_v2",
-                    output_format="mp3_44100_128"
-                )
-                
+            res = requests.post(url, json=payload, headers=headers, timeout=30)
+            if res.status_code == 200:
                 with open(out_path, "wb") as f:
-                    for chunk in audio_stream:
-                        if chunk:
-                            f.write(chunk)
-                            
-                output_paths.append(out_path)
-                
-            print(f"✅ ElevenLabs Audio generated: {len(output_paths)} lines.")
-            return output_paths
-            
+                    f.write(res.content)
+                print(f"✅ ElevenLabs Audio generated: {out_path}")
+                return [out_path]
+            else:
+                print(f"❌ ElevenLabs API Error: {res.text}")
         except Exception as e:
-            print(f"⚠️ ElevenLabs Failed ({e}). Falling back to Edge-TTS...")
-            output_paths = [] # Clear paths on failure to trigger fallback
+            print(f"⚠️ ElevenLabs Generation Failed: {e}")
+            
+    return []
 
-    # --- FALLBACK: EDGE-TTS ---
-    print("🎙️ Using Edge-TTS as fallback...")
-    try:
-        import asyncio
-        import edge_tts
-
-        async def _speak():
-            for i, line in enumerate(lines):
-                out_path = f"output/tts_line_{i}_{int(time.time())}.mp3"
-                communicate = edge_tts.Communicate(line, "ur-PK-AsadNeural", rate="-15%", pitch="-6Hz")
-                await communicate.save(out_path)
-                output_paths.append(out_path)
-
-        asyncio.run(_speak())
-        print(f"✅ Edge-TTS Audio generated: {len(output_paths)} lines.")
-        return output_paths
-        
-    except Exception as e:
-        print(f"❌ Edge-TTS Audio Generation Failed: {e}")
-        return []
-
-
-# ============================================================# ============================================================
-# STEP 5: Reel Video Studio
 # ============================================================
-def create_reel_video(data: dict, poet: dict, tts_paths: list) -> str:
+# STEP 5: Reel Video Studio (MoviePy Compositor)
+# ============================================================
+def create_reel_video(data: dict, tts_paths: list) -> str:
     print("🎬 Compositing 1080x1920 Reel Video with MoviePy...")
     try:
-        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip, concatenate_audioclips
+        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip
         import numpy as np
 
-        # 1. Stitch Audio Lines with a 1-Second Dramatic Pause
-        audio_clips = []
-        
-        # Create a 1-second silent audio clip using the first line as a template
-        base_clip = AudioFileClip(tts_paths[0])
-        silence = base_clip.subclip(0, min(0.1, base_clip.duration)).volumex(0) 
-        silence = concatenate_audioclips([silence] * 10) # ~1.0 second silence
-        
-        for i, path in enumerate(tts_paths):
-            audio_clips.append(AudioFileClip(path))
-            if i < len(tts_paths) - 1:
-                audio_clips.append(silence)
-                
-        tts_audio = concatenate_audioclips(audio_clips)
-        duration = min(tts_audio.duration + 3, 30)
+        # 1. Load TTS Audio
+        tts_audio = AudioFileClip(tts_paths[0])
+        duration = min(tts_audio.duration + 2, 30)
 
-        # 2. Background Setup
-        bg_path, is_video = get_reel_background(data.get("search_query", "dark rain"))
+        # 2. Background Video/Image Setup
+        bg_path, is_video = get_reel_background(data.get("search_query", "dark moody city"))
         
         if bg_path and is_video:
             bg_clip = VideoFileClip(bg_path).subclip(0, duration).resize(height=1920)
             if bg_clip.w < 1080: bg_clip = bg_clip.resize(width=1080)
             bg_clip = bg_clip.crop(x_center=bg_clip.w/2, y_center=bg_clip.h/2, width=1080, height=1920)
-            bg_clip = bg_clip.fl_image(lambda image: (image * 0.4).astype(np.uint8))
+            bg_clip = bg_clip.fl_image(lambda image: (image * 0.35).astype(np.uint8))
         elif bg_path and not is_video:
             bg_img = Image.open(bg_path).convert("RGBA").resize((1080, 1920), Image.Resampling.LANCZOS)
-            dark_overlay = Image.new("RGBA", (1080, 1920), (10, 10, 20, 160))
+            dark_overlay = Image.new("RGBA", (1080, 1920), (10, 10, 20, 180))
             bg_img = Image.alpha_composite(bg_img, dark_overlay).convert("RGB")
             bg_img_path = f"output/reel_bg_img_{int(time.time())}.jpg"
             bg_img.save(bg_img_path)
@@ -404,42 +360,44 @@ def create_reel_video(data: dict, poet: dict, tts_paths: list) -> str:
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
 
-        # 3. Audio Layering (Voice + Background Music)
+        # 3. Audio Layering
         music_dir = "music"
         final_audio = tts_audio
         if os.path.exists(music_dir):
             tracks = [os.path.join(music_dir, f) for f in os.listdir(music_dir) if f.endswith(".mp3")]
             if tracks:
-                music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.15)
+                music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.12)
                 final_audio = CompositeAudioClip([tts_audio.volumex(1.0), music])
 
-        # 4. Transparent Text Overlay Layer
+        # 4. Text Overlay Layer
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
         
         try:
-            font_hook = ImageFont.truetype(FONT_ITALIC, 32)
-            font_sher = ImageFont.truetype(FONT_SERIF, 48)
-            font_poet = ImageFont.truetype(FONT_SERIF, 32)
+            font_hook = ImageFont.truetype(FONT_ITALIC, 34)
+            font_body = ImageFont.truetype(FONT_SERIF, 44)
+            font_brand = ImageFont.truetype(FONT_SANS, 28)
         except:
-            font_hook = font_sher = font_poet = ImageFont.load_default()
+            font_hook = font_body = font_brand = ImageFont.load_default()
 
-        # Draw Hook
-        hook_text = textwrap.fill(data.get("hook", ""), width=32)
-        draw.text((540, 380), hook_text, font=font_hook, fill="#E0E0E0", anchor="mm", align="center")
+        # Hook Text
+        hook_text = textwrap.fill(data.get("hook", ""), width=30)
+        draw.text((540, 360), hook_text, font=font_hook, fill="#E0C080", anchor="mm", align="center")
 
-        # Draw Sher (Text wrapped for mobile boundaries)
-        sher_lines = data["sher_roman"].strip().split("\n")
+        # Main Script Text
+        body_lines = data["script_english"].strip().split("\n")
         wrapped_lines = []
-        for line in sher_lines:
-            wrapped_lines.extend(textwrap.wrap(line, width=30)) 
-        
-        final_sher_text = "\n".join(wrapped_lines)
-        draw.text((540, 960), final_sher_text, font=font_sher, fill="#FFFFFF", anchor="mm", align="center", spacing=24)
+        for line in body_lines:
+            if line.strip():
+                wrapped_lines.extend(textwrap.wrap(line, width=28))
+            else:
+                wrapped_lines.append("")
 
-        # Draw Poet & Brand
-        draw.text((540, 1400), f"-- {poet['name']} --", font=font_poet, fill="#C0A060", anchor="mm")
-        draw.text((540, 1750), IG_HANDLE, font=font_poet, fill="#888888", anchor="mm")
+        final_body_text = "\n".join(wrapped_lines)
+        draw.text((540, 960), final_body_text, font=font_body, fill="#FFFFFF", anchor="mm", align="center", spacing=22)
+
+        # Branding
+        draw.text((540, 1720), IG_HANDLE, font=font_brand, fill="#888888", anchor="mm")
 
         overlay_fname = f"output/overlay_{int(time.time())}.png"
         overlay_img.save(overlay_fname)
@@ -467,7 +425,7 @@ def upload_public_media(path: str) -> str:
         parsed = urlparse(CLOUDINARY_URL)
         endpoint = f"https://api.cloudinary.com/v1_1/{parsed.hostname}/auto/upload"
         with open(path, "rb") as f:
-            res = requests.post(endpoint, files={"file": f}, data={"folder": "shayari"}, auth=(parsed.username, parsed.password)).json()
+            res = requests.post(endpoint, files={"file": f}, data={"folder": "brain_blueprints"}, auth=(parsed.username, parsed.password)).json()
             url = res.get("secure_url")
             print(f"✅ Uploaded to Cloudinary: {url}")
             return url
@@ -515,8 +473,7 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
                     print("❌ Instagram Video Processing Failed.")
                     return False
         else:
-            # FIX: High-res photos take a few seconds to process. Wait before publishing.
-            print("⏳ Waiting 15 seconds for Instagram to process the high-res photo...")
+            print("⏳ Waiting 15 seconds for Instagram to process photo...")
             time.sleep(15)
 
         print("📤 Publishing to Instagram...")
@@ -531,7 +488,6 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
     except Exception as e:
         print(f"❌ Instagram API Failure: {e}")
         return False
-        
 
 # ============================================================
 # STATE TRACKING
@@ -539,47 +495,40 @@ def post_to_instagram(media_path: str, caption: str, is_video: bool = False) -> 
 def load_progress() -> dict:
     if os.path.exists("progress.json"):
         with open("progress.json") as f: return json.load(f)
-    return {"poet_index": 0, "total_posts": 0}
+    return {"total_posts": 0}
 
 def save_progress(p: dict):
     with open("progress.json", "w") as f: json.dump(p, f, indent=2)
 
-# ============================================================
 # ============================================================
 # MAIN EXECUTION
 # ============================================================
 def run():
     validate_environment()
     p = load_progress()
-    poet = POET_SCHEDULE[p["poet_index"] % len(POET_SCHEDULE)]
 
     print(f"\n=======================================================")
-    print(f"🚀 STARTING WORKFLOW: [{POST_TYPE.upper()}] for {poet['name']}")
+    print(f"🚀 STARTING WORKFLOW: [{POST_TYPE.upper()}] for {IG_HANDLE}")
     print(f"=======================================================\n")
 
-    data = generate_content(poet)
-
-    hook_str = data.get("hook") or ""
-    caption = f"{hook_str}\n\n{data['sher_roman']}\n\n-- {poet['name']}\n\n{data.get('caption','')}\n\n#urdushayari #hindishayari #poetry #relatable"
+    data = generate_content()
+    caption = f"{data.get('caption', '')}\n\n#psychology #humanbehavior #mindset #darkpsychology #brainblueprints #relatable"
 
     success = False
 
     if POST_TYPE == "photo":
-        img_path = create_photo_image(data, poet)
+        img_path = create_photo_image(data)
         success = post_to_instagram(img_path, caption, is_video=False)
-        if success:
-            p["poet_index"] += 1
 
     elif POST_TYPE == "reel":
         os.makedirs("output", exist_ok=True)
-        
         tts_paths = generate_tts(data)
         
         if not tts_paths:
             print("❌ FATAL: TTS audio failed. Exiting.")
             sys.exit(1)
 
-        reel_path = create_reel_video(data, poet, tts_paths)
+        reel_path = create_reel_video(data, tts_paths)
         
         if reel_path:
             success = post_to_instagram(reel_path, caption, is_video=True)
