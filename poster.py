@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Brain Blueprints Instagram Bot v1.0
-- High-retention Psychology & Behavioral Science content via Gemini 2.5 Flash
+- High-retention Psychology & Behavioral Science content via Gemini 2.0 Flash
 - Rotating Viral Frameworks: Listicle, If/Then, Infinite Loop
-- Cinematic English Voiceover via ElevenLabs API (Marcus / Callum)
+- Cinematic English Voiceover via ElevenLabs API (Marcus)
 - Dynamic Background Engine (Pexels Video / Unsplash Photo)
 - Pillow ANTIALIAS monkeypatch for MoviePy compatibility
 """
@@ -123,7 +123,7 @@ Return strictly valid JSON:
     print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.0-flash",
         contents=selected["system_prompt"]
     )
     
@@ -133,10 +133,11 @@ Return strictly valid JSON:
     return data
 
 # ============================================================
-# STEP 2: Dual Media Engine (Pexels + Unsplash)
+# STEP 2: Dual Media Engine (Unsplash + Pexels Cross-Fallback)
 # ============================================================
 def fetch_unsplash_photo(query: str) -> str:
-    if not UNSPLASH_ACCESS_KEY: return None
+    if not UNSPLASH_ACCESS_KEY:
+        return None
     try:
         print(f"📷 Fetching photo from Unsplash: '{query}'...")
         headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
@@ -148,13 +149,15 @@ def fetch_unsplash_photo(query: str) -> str:
                 p_path = f"output/unsplash_{int(time.time())}.jpg"
                 with open(p_path, "wb") as f:
                     f.write(requests.get(img_url, timeout=30).content)
+                print(f"✅ Downloaded Unsplash Photo: {p_path}")
                 return p_path
     except Exception as e:
         print(f"⚠️ Unsplash photo fetch error: {e}")
     return None
 
 def fetch_pexels_photo(query: str) -> str:
-    if not PEXELS_API_KEY: return None
+    if not PEXELS_API_KEY:
+        return None
     try:
         print(f"📷 Fetching photo from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
@@ -168,6 +171,7 @@ def fetch_pexels_photo(query: str) -> str:
                     p_path = f"output/pexels_img_{int(time.time())}.jpg"
                     with open(p_path, "wb") as f:
                         f.write(requests.get(img_url, timeout=30).content)
+                    print(f"✅ Downloaded Pexels Photo: {p_path}")
                     return p_path
     except Exception as e:
         print(f"⚠️ Pexels photo fetch error: {e}")
@@ -177,13 +181,18 @@ def get_photo_background(query: str) -> str:
     os.makedirs("output", exist_ok=True)
     providers = [fetch_unsplash_photo, fetch_pexels_photo]
     random.shuffle(providers)
+
     for fetch_func in providers:
         img_path = fetch_func(query)
-        if img_path and os.path.exists(img_path): return img_path
+        if img_path and os.path.exists(img_path):
+            return img_path
+
+    print("ℹ️ Both Unsplash and Pexels failed for photo. Using dark solid background fallback.")
     return None
 
 def fetch_pexels_video(query: str) -> str:
-    if not PEXELS_API_KEY: return None
+    if not PEXELS_API_KEY:
+        return None
     try:
         print(f"🎬 Fetching video from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
@@ -205,7 +214,8 @@ def fetch_pexels_video(query: str) -> str:
     return None
 
 def fetch_unsplash_video_equivalent(query: str) -> str:
-    if not UNSPLASH_ACCESS_KEY: return None
+    if not UNSPLASH_ACCESS_KEY:
+        return None
     try:
         print(f"🎬 Fetching vertical image from Unsplash for Reel: '{query}'...")
         headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
@@ -217,6 +227,7 @@ def fetch_unsplash_video_equivalent(query: str) -> str:
                 p_path = f"output/unsplash_portrait_{int(time.time())}.jpg"
                 with open(p_path, "wb") as f:
                     f.write(requests.get(img_url, timeout=30).content)
+                print(f"✅ Downloaded Unsplash Portrait Image for Reel: {p_path}")
                 return p_path
     except Exception as e:
         print(f"⚠️ Unsplash vertical image fetch error: {e}")
@@ -250,7 +261,8 @@ def create_photo_image(data: dict) -> str:
     bg_photo_path = get_photo_background(data.get("search_query", "dark moody city"))
 
     if bg_photo_path and os.path.exists(bg_photo_path):
-        base_img = Image.open(bg_photo_path).convert("RGBA").resize((W, H), Image.Resampling.LANCZOS)
+        base_img = Image.open(bg_photo_path).convert("RGBA")
+        base_img = base_img.resize((W, H), Image.Resampling.LANCZOS)
         dark_overlay = Image.new("RGBA", (W, H), (10, 10, 20, 180))
         img = Image.alpha_composite(base_img, dark_overlay).convert("RGB")
     else:
@@ -270,10 +282,8 @@ def create_photo_image(data: dict) -> str:
         tw = bbox[2] - bbox[0]
         draw.text(((W - tw) / 2, y), text, font=font, fill=color)
 
-    # Draw Hook
     center(data.get("hook", ""), 150, font_hook, "#C0A060")
-
-    # Draw Main Script
+    
     lines = data["script_english"].strip().split("\n")
     y_pos = 360
     for line in lines:
@@ -292,8 +302,8 @@ def create_photo_image(data: dict) -> str:
 # STEP 4: Audio Engine (ElevenLabs English Voice)
 # ============================================================
 def generate_tts(data: dict) -> list:
-    """Generates continuous TTS audio for the script."""
-    print(f"🎙️ Generating ElevenLabs Audio (Voice ID: {ELEVENLABS_VOICE_ID})...")
+    """Generates continuous TTS audio for the script using ElevenLabs."""
+    print(f"🎙️ Attempting Cinematic ElevenLabs Audio (Voice ID: {ELEVENLABS_VOICE_ID})...")
     os.makedirs("output", exist_ok=True)
     
     full_text = f"{data['hook']}... {data['script_english']}"
@@ -301,33 +311,31 @@ def generate_tts(data: dict) -> list:
     
     if ELEVENLABS_API_KEY:
         try:
-            url = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
-            headers = {
-                "Accept": "audio/mpeg",
-                "Content-Type": "application/json",
-                "xi-api-key": ELEVENLABS_API_KEY
-            }
-            payload = {
-                "text": full_text,
-                "model_id": "eleven_multilingual_v2",
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
-            }
+            from elevenlabs.client import ElevenLabs
             
-            res = requests.post(url, json=payload, headers=headers, timeout=30)
-            if res.status_code == 200:
-                with open(out_path, "wb") as f:
-                    f.write(res.content)
-                print(f"✅ ElevenLabs Audio generated: {out_path}")
-                return [out_path]
-            else:
-                print(f"❌ ElevenLabs API Error: {res.text}")
+            client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+            audio_stream = client.text_to_speech.convert(
+                text=full_text,
+                voice_id=ELEVENLABS_VOICE_ID,
+                model_id="eleven_multilingual_v2",
+                output_format="mp3_44100_128"
+            )
+            
+            with open(out_path, "wb") as f:
+                for chunk in audio_stream:
+                    if chunk:
+                        f.write(chunk)
+                        
+            print(f"✅ ElevenLabs Audio generated successfully: {out_path}")
+            return [out_path]
+            
         except Exception as e:
-            print(f"⚠️ ElevenLabs Generation Failed: {e}")
+            print(f"❌ ElevenLabs Failed ({e}).")
             
     return []
 
 # ============================================================
-# STEP 5: Reel Video Studio (MoviePy Compositor)
+# STEP 5: Reel Video Studio
 # ============================================================
 def create_reel_video(data: dict, tts_paths: list) -> str:
     print("🎬 Compositing 1080x1920 Reel Video with MoviePy...")
@@ -339,7 +347,7 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
         tts_audio = AudioFileClip(tts_paths[0])
         duration = min(tts_audio.duration + 2, 30)
 
-        # 2. Background Video/Image Setup
+        # 2. Background Setup
         bg_path, is_video = get_reel_background(data.get("search_query", "dark moody city"))
         
         if bg_path and is_video:
@@ -360,7 +368,7 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
 
-        # 3. Audio Layering
+        # 3. Audio Layering (Voice + Background Music)
         music_dir = "music"
         final_audio = tts_audio
         if os.path.exists(music_dir):
@@ -369,22 +377,22 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
                 music = AudioFileClip(random.choice(tracks)).subclip(0, duration).volumex(0.12)
                 final_audio = CompositeAudioClip([tts_audio.volumex(1.0), music])
 
-        # 4. Text Overlay Layer
+        # 4. Transparent Text Overlay Layer
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
         
         try:
-            font_hook = ImageFont.truetype(FONT_ITALIC, 34)
-            font_body = ImageFont.truetype(FONT_SERIF, 44)
+            font_hook  = ImageFont.truetype(FONT_ITALIC, 34)
+            font_body  = ImageFont.truetype(FONT_SERIF, 44)
             font_brand = ImageFont.truetype(FONT_SANS, 28)
         except:
             font_hook = font_body = font_brand = ImageFont.load_default()
 
-        # Hook Text
+        # Draw Hook
         hook_text = textwrap.fill(data.get("hook", ""), width=30)
         draw.text((540, 360), hook_text, font=font_hook, fill="#E0C080", anchor="mm", align="center")
 
-        # Main Script Text
+        # Draw Main Script (Text wrapped for mobile boundaries)
         body_lines = data["script_english"].strip().split("\n")
         wrapped_lines = []
         for line in body_lines:
@@ -392,11 +400,11 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
                 wrapped_lines.extend(textwrap.wrap(line, width=28))
             else:
                 wrapped_lines.append("")
-
+        
         final_body_text = "\n".join(wrapped_lines)
         draw.text((540, 960), final_body_text, font=font_body, fill="#FFFFFF", anchor="mm", align="center", spacing=22)
 
-        # Branding
+        # Draw Brand Handle
         draw.text((540, 1720), IG_HANDLE, font=font_brand, fill="#888888", anchor="mm")
 
         overlay_fname = f"output/overlay_{int(time.time())}.png"
