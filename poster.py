@@ -27,7 +27,6 @@ PEXELS_API_KEY         = os.environ.get("PEXELS_API_KEY", "")
 UNSPLASH_ACCESS_KEY    = os.environ.get("UNSPLASH_ACCESS_KEY", "")
 ELEVENLABS_API_KEY     = os.environ.get("ELEVENLABS_API_KEY", "")
 MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
-CLOUDINARY_URL         = os.environ.get("CLOUDINARY_URL", "")
 POST_TYPE              = os.environ.get("POST_TYPE", "reel").lower()
 
 IG_HANDLE              = "@brain.blueprints"
@@ -74,8 +73,9 @@ Return strictly valid JSON:
     selected = random.choice(frameworks)
     print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
 
+    # Using the active, supported 3.5 model
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",
         contents=selected["system_prompt"]
     )
     
