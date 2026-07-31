@@ -1,4 +1,4 @@
-```markdown
+
 # 🧠 Brain Blueprints Maintainer Context
 
 This file is the private/operational memory for this repository. Keep it updated when the workflow, hosting provider, token process, or posting logic changes.
