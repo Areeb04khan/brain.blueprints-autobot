@@ -1,8 +1,5 @@
 {
-  "poet_index": 9,
-  "total_posts": 26,
-  "last_post_date": "2026-04-11",
-  "last_post_type": "reel",
-  "status": "success",
-  "today_content": null
+  "total_posts": 0,
+  "last_run": null,
+  "status": "active"
 }
