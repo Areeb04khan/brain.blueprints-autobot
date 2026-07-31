@@ -1,37 +1,76 @@
-name: Brain Blueprints Auto Poster
+name: Daily Shayari Post
 
 on:
   schedule:
-    - cron: '0 7,14,22 * * *'
+    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST - Photo
+    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST - Reel
   workflow_dispatch:
+    inputs:
+      post_type:
+        description: 'Post type: photo or reel'
+        required: true
+        default: 'photo'
+        type: choice
+        options:
+          - photo
+          - reel
 
 jobs:
-  build:
-    runs-on: ubuntu-24.04
+  post-shayari:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip uninstall -y google-generativeai
-        pip install google-genai requests pillow moviepy==1.0.3 numpy elevenlabs
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y fonts-dejavu-core fonts-dejavu-extra ffmpeg
+          fc-cache -f -v
 
-    - name: Run Python Script
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
-        INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
-        ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-        PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-        UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-        POST_TYPE: reel
-        MEDIA_HOST: tempfile
-      run: python -u poster.py
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip uninstall -y google-generativeai
+          pip install google-genai requests pillow moviepy==1.0.3 numpy elevenlabs edge-tts asyncio openai
+
+      - name: Restore progress
+        uses: actions/cache@v4
+        with:
+          path: progress.json
+          key: progress-${{ github.run_id }}-${{ github.run_number }}
+          restore-keys: |
+            progress-
+
+      - name: Determine post type
+        id: post_type
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.post_type }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "30 2 * * *" ]; then
+            echo "type=photo" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=reel" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Bot Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+          POST_TYPE: ${{ steps.post_type.outputs.type }}
+          MEDIA_HOST: tempfile
+        run: python -u poster.py
