@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Brain Blueprints Bot v6.0 (Multi-Tier AI & TTS Failover Engine)
+Brain Blueprints Bot v6.1 (Multi-Tier AI & TTS Failover Engine)
 - AI Chain: Gemini -> OpenRouter -> Groq -> NVIDIA NIM
-- TTS Chain: ElevenLabs -> Groq TTS -> OpenRouter TTS -> Edge-TTS
+- TTS Chain: ElevenLabs -> Groq TTS -> Edge-TTS
 - Fully automated psychology & behavioral reels
 """
 
@@ -11,6 +11,7 @@ if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = getattr(PIL.Image, 'Resampling', PIL.Image).LANCZOS
 
 from google import genai
+from google.genai import types
 from openai import OpenAI
 import requests
 import json
@@ -21,7 +22,6 @@ import textwrap
 import random
 from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
-from urllib.parse import urlparse
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -59,10 +59,10 @@ FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
 FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ============================================================
-# MULTI-TIER AI CONTENT GENERATOR (Failover Chain for Psychology)
+# MULTI-TIER AI CONTENT GENERATOR (Failover Chain)
 # ============================================================
 def generate_content() -> dict:
-    print(f"🧠 Querying AI Chain for @brain.blueprints content...")
+    print(f"🧠 Querying AI Chain for {IG_HANDLE} content...")
     
     prompt = """Act as a social tactics expert and psychological strategist. 
 Write a punchy, 3-sentence psychological tip for commanding respect, reading body language, or detecting dark manipulation.
@@ -78,12 +78,22 @@ Return strictly valid JSON:
   "caption": "Let the video loop twice to get it. 🧠\\n\\nFollow @brain.blueprints for daily psychological insights."
 }"""
 
-    # Tier 1: Gemini
+    # Tier 1: Gemini (With Explicit Fail-Fast Configuration)
     if GEMINI_API_KEY:
         try:
             print(f"🧠 [1/4] Querying Gemini AI...")
-            client = genai.Client(api_key=GEMINI_API_KEY)
-            response = client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
+            # Disable SDK automatic retries so 503 errors instantly trigger the fallback chain
+            client = genai.Client(
+                api_key=GEMINI_API_KEY,
+                http_options=types.HttpOptions(
+                    retry_options=types.HttpRetryOptions(attempts=1)
+                )
+            )
+            response = client.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(temperature=0.7)
+            )
             raw = response.text.strip().replace("```json","").replace("```","").strip()
             data = json.loads(raw)
             print("✅ Generated content successfully via Gemini!")
