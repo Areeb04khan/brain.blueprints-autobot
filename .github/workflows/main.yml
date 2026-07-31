@@ -2,7 +2,7 @@ name: Brain Blueprints Auto Poster
 
 on:
   schedule:
-    - cron: '0 15 * * *'
+    - cron: '0 7,14,22 * * *'
   workflow_dispatch:
 
 jobs:
