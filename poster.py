@@ -30,7 +30,7 @@ MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
 POST_TYPE              = os.environ.get("POST_TYPE", "reel").lower()
 
 IG_HANDLE              = "@brain.blueprints"
-ELEVENLABS_VOICE_ID    = "bVMeCyTHy58xNoL34h3p"  
+ELEVENLABS_VOICE_ID    = "pNInz6obpgDQGcFmaJgB"  
 
 REQUIRED_ENV_VARS = ["GEMINI_API_KEY", "INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_USER_ID"]
 
