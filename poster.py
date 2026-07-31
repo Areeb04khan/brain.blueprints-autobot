@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+Brain Blueprints Bot v6.0 (Multi-Tier AI & TTS Failover Engine)
+- AI Chain: Gemini -> OpenRouter -> Groq -> NVIDIA NIM
+- TTS Chain: ElevenLabs -> Groq TTS -> OpenRouter TTS -> Edge-TTS
+- Fully automated psychology & behavioral reels
+"""
+
 import PIL.Image
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = getattr(PIL.Image, 'Resampling', PIL.Image).LANCZOS
 
 from google import genai
+from openai import OpenAI
 import requests
 import json
 import os
@@ -18,26 +26,32 @@ from urllib.parse import urlparse
 sys.stdout.reconfigure(line_buffering=True)
 
 # ============================================================
-# CONFIGURATION
+# CONFIGURATION & ENVIRONMENT
 # ============================================================
 GEMINI_API_KEY         = os.environ.get("GEMINI_API_KEY", "")
+OPENROUTER_API_KEY     = os.environ.get("OPENROUTER_API_KEY", "")
+GROQ_API_KEY           = os.environ.get("GROQ_API_KEY", "")
+NVIDIA_API_KEY         = os.environ.get("NVIDIA_API_KEY", "")
+ELEVENLABS_API_KEY     = os.environ.get("ELEVENLABS_API_KEY", "")
+
 INSTAGRAM_ACCESS_TOKEN = os.environ.get("INSTAGRAM_ACCESS_TOKEN", "")
 INSTAGRAM_USER_ID      = os.environ.get("INSTAGRAM_USER_ID", "")
 PEXELS_API_KEY         = os.environ.get("PEXELS_API_KEY", "")
 UNSPLASH_ACCESS_KEY    = os.environ.get("UNSPLASH_ACCESS_KEY", "")
-ELEVENLABS_API_KEY     = os.environ.get("ELEVENLABS_API_KEY", "")
 MEDIA_HOST             = os.environ.get("MEDIA_HOST", "tempfile").lower()
 POST_TYPE              = os.environ.get("POST_TYPE", "reel").lower()
-
 IG_HANDLE              = "@brain.blueprints"
-ELEVENLABS_VOICE_ID    = "pNInz6obpgDQGcFmaJgB"  
+ELEVENLABS_VOICE_ID    = "pNInz6obpgDQGcFmaJgB"  # Default stable voice
 
-REQUIRED_ENV_VARS = ["GEMINI_API_KEY", "INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_USER_ID"]
+REQUIRED_ENV_VARS = ["INSTAGRAM_ACCESS_TOKEN", "INSTAGRAM_USER_ID"]
 
 def validate_environment():
     missing = [name for name in REQUIRED_ENV_VARS if not os.environ.get(name)]
     if missing:
         print(f"❌ FATAL: Missing required secret(s): {', '.join(missing)}")
+        sys.exit(1)
+    if not any([GEMINI_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, NVIDIA_API_KEY]):
+        print("❌ FATAL: At least one AI API key must be provided!")
         sys.exit(1)
 
 FONT_SERIF  = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
@@ -45,20 +59,16 @@ FONT_ITALIC = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf"
 FONT_SANS   = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 # ============================================================
-# CONTENT GENERATOR
+# MULTI-TIER AI CONTENT GENERATOR (Failover Chain for Psychology)
 # ============================================================
 def generate_content() -> dict:
-    print(f"🧠 Querying Gemini AI for @brain.blueprints content...")
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    print(f"🧠 Querying AI Chain for @brain.blueprints content...")
     
-    frameworks = [
-        {
-            "type": "infinite_loop",
-            "system_prompt": """Act as a social tactics expert. 
-Write a punchy, 3-sentence psychological tip for commanding respect or detecting deception.
+    prompt = """Act as a social tactics expert and psychological strategist. 
+Write a punchy, 3-sentence psychological tip for commanding respect, reading body language, or detecting dark manipulation.
 Rules:
 1. CRITICAL: The very last sentence MUST end mid-thought or grammatically flow directly into the first word of the hook to create an unnoticeable 100% audio loop!
-2. Keep it under 10 seconds total.
+2. Keep it under 10 seconds total spoken length.
 
 Return strictly valid JSON:
 {
@@ -67,30 +77,69 @@ Return strictly valid JSON:
   "search_query": "chess board dark lighting luxury minimal",
   "caption": "Let the video loop twice to get it. 🧠\\n\\nFollow @brain.blueprints for daily psychological insights."
 }"""
+
+    # Tier 1: Gemini
+    if GEMINI_API_KEY:
+        try:
+            print(f"🧠 [1/4] Querying Gemini AI...")
+            client = genai.Client(api_key=GEMINI_API_KEY)
+            response = client.models.generate_content(model="gemini-3.5-flash", contents=prompt)
+            raw = response.text.strip().replace("```json","").replace("```","").strip()
+            data = json.loads(raw)
+            print("✅ Generated content successfully via Gemini!")
+            return data
+        except Exception as e:
+            print(f"⚠️ Gemini failed ({e}). Moving to Fallback Chain...")
+
+    # Fallback Providers
+    fallbacks = [
+        {
+            "name": "OpenRouter",
+            "api_key": OPENROUTER_API_KEY,
+            "base_url": "https://openrouter.ai/api/v1",
+            "model": "openrouter/free"
+        },
+        {
+            "name": "Groq",
+            "api_key": GROQ_API_KEY,
+            "base_url": "https://api.groq.com/openai/v1",
+            "model": "llama-3.3-70b-versatile"
+        },
+        {
+            "name": "NVIDIA NIM",
+            "api_key": NVIDIA_API_KEY,
+            "base_url": "https://integrate.api.nvidia.com/v1",
+            "model": "meta/llama-3.1-70b-instruct"
         }
     ]
 
-    selected = random.choice(frameworks)
-    print(f"🎯 Selected Strategy: [{selected['type'].upper()}]")
+    for index, provider in enumerate(fallbacks, start=2):
+        if not provider["api_key"]:
+            continue
+        try:
+            print(f"🔄 [{index}/4] Trying {provider['name']} Fallback...")
+            client = OpenAI(base_url=provider["base_url"], api_key=provider["api_key"])
+            response = client.chat.completions.create(
+                model=provider["model"],
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7
+            )
+            raw = response.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+            data = json.loads(raw)
+            print(f"✅ Generated content successfully via {provider['name']}!")
+            return data
+        except Exception as err:
+            print(f"⚠️ {provider['name']} failed: {err}")
 
-    # Using the active, supported 3.5 model
-    response = client.models.generate_content(
-        model="gemini-3.5-flash",
-        contents=selected["system_prompt"]
-    )
-    
-    raw = response.text.strip().replace("```json", "").replace("```", "").strip()
-    data = json.loads(raw)
-    print(f"✅ Content generated successfully: '{data.get('hook', '')}'")
-    return data
+    print("❌ FATAL: All AI providers failed.")
+    sys.exit(1)
 
 # ============================================================
-# MEDIA ENGINE
+# MEDIA ENGINE (Pexels + Unsplash)
 # ============================================================
 def fetch_pexels_video(query: str) -> str:
     if not PEXELS_API_KEY: return None
     try:
-        print(f"🎬 Fetching video from Pexels: '{query}'...")
         headers = {"Authorization": PEXELS_API_KEY}
         url = f"https://api.pexels.com/videos/search?query={query}&orientation=portrait&per_page=5"
         res = requests.get(url, headers=headers, timeout=10)
@@ -103,16 +152,14 @@ def fetch_pexels_video(query: str) -> str:
                         v_path = f"output/pexels_vid_{int(time.time())}.mp4"
                         with open(v_path, "wb") as f:
                             f.write(requests.get(vf["link"], timeout=30).content)
-                        print(f"✅ Downloaded Pexels Video: {v_path}")
                         return v_path
-    except Exception as e:
-        print(f"⚠️ Pexels video fetch error: {e}")
+    except Exception:
+        pass
     return None
 
 def fetch_unsplash_video_equivalent(query: str) -> str:
     if not UNSPLASH_ACCESS_KEY: return None
     try:
-        print(f"🎬 Fetching vertical image from Unsplash for Reel: '{query}'...")
         headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
         url = f"https://api.unsplash.com/photos/random?query={query}&orientation=portrait"
         res = requests.get(url, headers=headers, timeout=10)
@@ -122,10 +169,9 @@ def fetch_unsplash_video_equivalent(query: str) -> str:
                 p_path = f"output/unsplash_portrait_{int(time.time())}.jpg"
                 with open(p_path, "wb") as f:
                     f.write(requests.get(img_url, timeout=30).content)
-                print(f"✅ Downloaded Unsplash Portrait Image for Reel: {p_path}")
                 return p_path
-    except Exception as e:
-        print(f"⚠️ Unsplash vertical image fetch error: {e}")
+    except Exception:
+        pass
     return None
 
 def get_reel_background(query: str) -> tuple:
@@ -137,32 +183,60 @@ def get_reel_background(query: str) -> tuple:
     return (None, False)
 
 # ============================================================
-# AUDIO ENGINE
+# MULTI-TIER TTS FAILOVER ENGINE (English)
 # ============================================================
 def generate_tts(data: dict) -> list:
-    print(f"🎙️ Attempting Cinematic ElevenLabs Audio (Voice ID: {ELEVENLABS_VOICE_ID})...")
-    os.makedirs("output", exist_ok=True)
     full_text = f"{data['hook']}... {data['script_english']}"
     out_path = f"output/tts_full_{int(time.time())}.mp3"
-    
+
+    # Tier 1: ElevenLabs
     if ELEVENLABS_API_KEY:
         try:
+            print("🎙️ [TTS 1/4] Trying ElevenLabs...")
             from elevenlabs.client import ElevenLabs
             client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
             audio_stream = client.text_to_speech.convert(
-                text=full_text,
-                voice_id=ELEVENLABS_VOICE_ID,
-                model_id="eleven_multilingual_v2",
-                output_format="mp3_44100_128"
+                text=full_text, voice_id=ELEVENLABS_VOICE_ID,
+                model_id="eleven_multilingual_v2", output_format="mp3_44100_128"
             )
             with open(out_path, "wb") as f:
                 for chunk in audio_stream:
                     if chunk: f.write(chunk)
-            print(f"✅ ElevenLabs Audio generated successfully: {out_path}")
+            print("✅ ElevenLabs Audio generated successfully!")
             return [out_path]
         except Exception as e:
-            print(f"❌ ElevenLabs Failed ({e}).")
-    return []
+            print(f"⚠️ ElevenLabs failed ({e}). Moving to Groq TTS...")
+
+    # Tier 2: Groq TTS
+    if GROQ_API_KEY:
+        try:
+            print("🎙️ [TTS 2/4] Trying Groq TTS...")
+            client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=GROQ_API_KEY)
+            response = client.audio.speech.create(
+                model="canopylabs/orpheus-v1-english",
+                voice="hannah",
+                input=full_text
+            )
+            response.stream_to_file(out_path)
+            print("✅ Groq TTS Audio generated successfully!")
+            return [out_path]
+        except Exception as e:
+            print(f"⚠️ Groq TTS failed ({e}). Moving to Edge-TTS...")
+
+    # Tier 3: Edge-TTS (Bulletproof local safety net)
+    try:
+        print("🎙️ [TTS 3/4] Generating fallback via Edge-TTS...")
+        import asyncio
+        import edge_tts
+        async def _speak():
+            communicate = edge_tts.Communicate(full_text, "en-US-ChristopherNeural")
+            await communicate.save(out_path)
+        asyncio.run(_speak())
+        print("✅ Edge-TTS Audio generated successfully!")
+        return [out_path]
+    except Exception as e:
+        print(f"❌ FATAL: All TTS providers failed: {e}")
+        return []
 
 # ============================================================
 # REEL COMPOSITOR
@@ -170,14 +244,13 @@ def generate_tts(data: dict) -> list:
 def create_reel_video(data: dict, tts_paths: list) -> str:
     print("🎬 Compositing 1080x1920 Reel Video with MoviePy...")
     try:
-        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip
+        from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip
         import numpy as np
 
         tts_audio = AudioFileClip(tts_paths[0])
         duration = min(tts_audio.duration + 2, 30)
 
         bg_path, is_video = get_reel_background(data.get("search_query", "dark moody city"))
-        
         if bg_path and is_video:
             bg_clip = VideoFileClip(bg_path).subclip(0, duration).resize(height=1920)
             if bg_clip.w < 1080: bg_clip = bg_clip.resize(width=1080)
@@ -196,10 +269,8 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
             clean_bg.save(clean_bg_path)
             bg_clip = ImageClip(clean_bg_path, duration=duration)
 
-        final_audio = tts_audio
         overlay_img = Image.new("RGBA", (1080, 1920), (0,0,0,0))
         draw = ImageDraw.Draw(overlay_img)
-        
         try:
             font_hook  = ImageFont.truetype(FONT_ITALIC, 34)
             font_body  = ImageFont.truetype(FONT_SERIF, 44)
@@ -222,15 +293,12 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
 
         overlay_fname = f"output/overlay_{int(time.time())}.png"
         overlay_img.save(overlay_fname)
-
         txt_clip = ImageClip(overlay_fname, duration=duration)
-        final_video = CompositeVideoClip([bg_clip, txt_clip]).set_audio(final_audio)
-        reel_path = f"output/reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
-        
-        final_video.write_videofile(reel_path, fps=24, codec="libx264", audio_codec="aac", verbose=False, logger=None)
-        print(f"✅ Reel video created: {reel_path}")
-        return reel_path
 
+        final_video = CompositeVideoClip([bg_clip, txt_clip]).set_audio(tts_audio)
+        reel_path = f"output/reel_{datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+        final_video.write_videofile(reel_path, fps=24, codec="libx264", audio_codec="aac", verbose=False, logger=None)
+        return reel_path
     except Exception as e:
         print(f"❌ Video render failure: {e}")
         return None
@@ -239,7 +307,6 @@ def create_reel_video(data: dict, tts_paths: list) -> str:
 # INSTAGRAM PUBLISHER
 # ============================================================
 def upload_public_media(path: str) -> str:
-    print(f"☁️ Hosting public media file: {path}...")
     with open(path, "rb") as f:
         res = requests.post("https://tempfile.org/api/upload/local", files={"files": (os.path.basename(path), f)}).json()
         if res.get("success"):
@@ -251,27 +318,19 @@ def post_to_instagram(media_path: str, caption: str) -> bool:
         media_url = upload_public_media(media_path)
         payload = {"access_token": INSTAGRAM_ACCESS_TOKEN, "caption": caption, "media_type": "REELS", "video_url": media_url}
 
-        print("📡 Creating Instagram Media Container...")
         c_res = requests.post(f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media", data=payload).json()
         container_id = c_res.get("id")
-        
         if not container_id: return False
 
-        print("⏳ Polling Instagram Reels processing status...")
         for attempt in range(1, 21):
             time.sleep(10)
             status = requests.get(f"https://graph.instagram.com/v21.0/{container_id}?fields=status_code&access_token={INSTAGRAM_ACCESS_TOKEN}").json()
             code = status.get("status_code")
-            print(f"   [{attempt}/20] Status: {code}")
             if code == "FINISHED": break
             elif code == "ERROR": return False
 
-        print("📤 Publishing to Instagram...")
         p_res = requests.post(f"https://graph.instagram.com/v21.0/{INSTAGRAM_USER_ID}/media_publish", data={"creation_id": container_id, "access_token": INSTAGRAM_ACCESS_TOKEN}).json()
-        if "id" in p_res:
-            print(f"🎉 Published Successfully! Instagram Post ID: {p_res['id']}")
-            return True
-        return False
+        return "id" in p_res
     except Exception as e:
         print(f"❌ Instagram API Failure: {e}")
         return False
@@ -287,12 +346,15 @@ def run():
 
     os.makedirs("output", exist_ok=True)
     tts_paths = generate_tts(data)
-    
     if not tts_paths: sys.exit(1)
 
     reel_path = create_reel_video(data, tts_paths)
     if reel_path:
-        post_to_instagram(reel_path, caption)
+        success = post_to_instagram(reel_path, caption)
+        if success:
+            print("\n✅ WORKFLOW COMPLETED SUCCESSFULLY!")
+        else:
+            sys.exit(1)
     else:
         sys.exit(1)
 
