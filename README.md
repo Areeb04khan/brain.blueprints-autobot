@@ -1,40 +1,32 @@
 
-<div align="center">
+# 🧠 Brain Blueprints Automation Engine v6.0 🧠
 
-# ✦ Instagram Shayari Bot v5.5 ✦
+A high-engagement, retention-focused, fully automated psychological tactics and behavioral analysis publishing studio.
 
-### A cinematic, retention-focused, fully automated poetry publishing engine.
-
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
-![Gemini](https://img.shields.io/badge/Gemini_2.5_Flash-AI_Content-8E75B2?style=for-the-badge&logo=google&logoColor=white)
-![Pexels](https://img.shields.io/badge/Pexels-Video_&_Photo-05A081?style=for-the-badge)
-![Unsplash](https://img.shields.io/badge/Unsplash-HD_Photos-000000?style=for-the-badge&logo=unsplash&logoColor=white)
-![Instagram](https://img.shields.io/badge/Instagram-Graph_API-E4405F?style=for-the-badge&logo=instagram&logoColor=white)
-![License](https://img.shields.io/badge/License-Attribution_Required-black?style=for-the-badge)
-
-**Generate. Design. Host. Publish. Repeat.**
-
-Turn a GitHub repository into an autonomous publishing studio that runs 100% on free APIs to curate poetry, fetch aesthetic stock media, synthesize voiceovers, edit Reels, and publish directly to Instagram.
-
-</div>
+Python | GitHub Actions | Multi-AI Failover | Pexels | Unsplash | ElevenLabs | Instagram Graph API
 
 ---
 
-## 🌙 What Makes Version 5.5 Different
+## ⚡ Generate. Design. Host. Publish. Repeat.
 
-Unlike simple text-posting scripts, this bot builds high-retention Instagram media designed for maximum reach, shares, and saves:
+Turn a GitHub repository into an autonomous studio that runs 100% on cloud and local APIs to curate dark psychology insights, fetch moody aesthetic stock media, synthesize multi-tier voiceovers, edit 100% looping Reels, and publish directly to Instagram.
+
+---
+
+## 🌙 What Makes Version 6.0 Different?
+
+Unlike static text-posting scripts, this bot builds high-retention Instagram Reels designed for viral algorithmic loops, shares, and saves:
 
 | Layer | Technology | Function |
-|---|---|---|
-| 🧠 **Content Brain** | Gemini 2.5 Flash | Generates authentic Shayari, Roman Urdu, Urdu script, English translations, and visual search terms. |
-| 🖼️ **Photo Engine** | Unsplash + Pexels API | Fetches aesthetic high-res photography with translucent dark overlays for legibility. |
-| 🎬 **Reel Studio** | Pexels + Unsplash + MoviePy | Composites 4K vertical motion video clips with timed text overlays and background music. |
-| 🎙️ **Voice Layer** | Edge-TTS (`ur-PK-AsadNeural`) | Synthesizes realistic Urdu pronunciation for video narration. |
-| 🔄 **Cross-Fallback** | Dual-Engine Architecture | Automatically fails over between Unsplash and Pexels if any API limit or network error occurs. |
-| ☁️ **Media Bridge** | TempFile / Cloudinary | Serves temporary or permanent public URLs for Instagram Graph API ingestion. |
-| 📡 **Publisher** | Instagram Graph API | Automates container creation, video processing status polling, and direct publishing. |
-| 🕰️ **Scheduler** | GitHub Actions | Runs completely hands-free on daily crons. |
+| :--- | :--- | :--- |
+| **🧠 Content Brain** | Multi-Tier AI Chain (Gemini 3.5 Flash → OpenRouter → Groq → NVIDIA NIM) | Generates punchy social tactics, behavioral triggers, and seamless audio-loop scripts. |
+| **🖼️ Media Engine** | Pexels + Unsplash API | Fetches aesthetic vertical portrait stock videos and dark moody photography. |
+| **🎬 Reel Studio** | MoviePy 1.0.3 + NumPy | Composites 1080x1920 vertical motion video clips with timed text overlays and zero-latency cuts. |
+| **🎙️ Voice Layer** | Multi-Tier TTS (ElevenLabs → Groq TTS → Edge-TTS) | Synthesizes realistic, cinematic voice narration for high-retention viewing. |
+| **🔄 Cross-Fallback** | 5-Tier Resilient Architecture | Automatically cycles through AI and TTS providers instantly if any API rate-limit or 503 error occurs. |
+| **☁️ Media Bridge** | TempFile (tempfile.org) | Serves temporary public URLs for Instagram Graph API ingestion. |
+| **📡 Publisher** | Instagram Graph API | Automates container creation, video processing status polling, and direct publishing. |
+| **🕰️ Scheduler** | GitHub Actions | Runs completely hands-free 3 times a day via cron. |
 
 ---
 
@@ -42,28 +34,22 @@ Unlike simple text-posting scripts, this bot builds high-retention Instagram med
 
 ```mermaid
 flowchart TD
-    A["GitHub Actions Schedule / Manual Run"] --> B{"POST_TYPE"}
-    B -->|photo| C["Fetch Unsplash / Pexels Photo"]
-    B -->|reel| D["Fetch Pexels / Unsplash Vertical Video"]
-    C --> E["Apply Translucent Dark Tint + Overlay Text (Pillow)"]
-    D --> F["Generate Native Urdu Audio (Edge-TTS)"]
-    F --> G["Layer Background Music + Text Overlay (MoviePy)"]
-    E --> H["Upload Public Media (TempFile / Cloudinary)"]
-    G --> H
-    H --> I["Create Instagram Media Container"]
-    I --> J["Poll Container Processing (Reels)"]
-    J --> K["Publish to Instagram"]
-    K --> L["Update progress.json & Cycle Poet List"]
+    A["GitHub Actions Schedule / Manual Run"] --> B["Multi-Tier AI Content Generation (Gemini -> OpenRouter -> Groq -> NIM)"]
+    B --> C["Fetch Moody Portrait Video / Photo (Pexels / Unsplash)"]
+    C --> D["Multi-Tier TTS Voice Generation (ElevenLabs -> Groq -> Edge-TTS)"]
+    D --> E["Compositing 1080x1920 Reel (MoviePy 1.0.3)"]
+    E --> F["Upload Public Media (TempFile)"]
+    F --> G["Create Instagram Media Container"]
+    G --> H["Poll Container Processing Status"]
+    H --> I["Publish Reel to Instagram (@brain.blueprints)"]
 
 ```
 ## 📂 Repository Layout
 ```text
 .
-├── .github/workflows/main.yml  # GitHub Actions schedule and environment setup
-├── music/                      # Royalty-free instrumental MP3 tracks for Reels
-├── poster.py                   # The core bot engine
-├── progress.json               # Posting state tracking
-├── requirements.txt            # Python dependencies
+├── .github/workflows/main.yml  # GitHub Actions cron schedules and environment runner setup
+├── poster.py                   # The core multi-tier AI and video rendering engine
+├── requirements.txt            # Python dependencies (Pinned MoviePy 1.0.3 & OpenAI bridge)
 ├── LICENSE                     # Attribution-Required License
 └── README.md                   # System documentation
 
@@ -72,64 +58,55 @@ flowchart TD
 ### 1. Clone or Fork
 ```bash
 git clone YOUR_REPO_URL
-cd shayari-bot
+cd brain.blueprints-autobot
 
 ```
 ### 2. Configure GitHub Secrets
-Go to your repository:
-Settings → Secrets and variables → Actions → New repository secret
+Go to your repository: **Settings → Secrets and variables → Actions → New repository secret**
 | Secret Name | Required | Description |
 |---|---|---|
-| GEMINI_API_KEY | ✅ | Free API key from Google AI Studio. |
+| GEMINI_API_KEY | ✅ (Tier 1) | Free API key from Google AI Studio. |
+| OPENROUTER_API_KEY | ✅ (Tier 2) | Free API key from OpenRouter.ai. |
+| GROQ_API_KEY | ✅ (Tier 3) | Free API key from Groq Console. |
+| NVIDIA_API_KEY | ✅ (Tier 4) | Free API key from NVIDIA NIM (nvapi-...). |
+| ELEVENLABS_API_KEY | ✅ (TTS 1) | ElevenLabs API key for cinematic voiceovers. |
 | INSTAGRAM_ACCESS_TOKEN | ✅ | Meta Graph API long-lived access token. |
 | INSTAGRAM_USER_ID | ✅ | Connected Instagram Creator / Business ID. |
 | PEXELS_API_KEY | ✅ | Free API key from Pexels Developer Portal. |
 | UNSPLASH_ACCESS_KEY | ✅ | Free Access Key from Unsplash Developer Portal. |
-| CLOUDINARY_URL | Optional | Required only if MEDIA_HOST=cloudinary. |
 ## 🕰️ Automated Schedule
-The bot posts twice daily via GitHub Actions:
-```yaml
-- cron: '30 2 * * *'   # 8:00 AM IST - Static Photo
-- cron: '30 13 * * *'  # 7:00 PM IST - Motion Reel
-
-```
+The bot posts **3 times daily** automatically via GitHub Actions crons:
+ * 0 2,10,18 * * * (Optimized intervals for global reach)
 ## 🧪 Local Testing
-PowerShell (Windows):
+### PowerShell (Windows):
 ```powershell
 $env:GEMINI_API_KEY="your_key"
+$env:OPENROUTER_API_KEY="your_key"
+$env:GROQ_API_KEY="your_key"
+$env:NVIDIA_API_KEY="your_key"
+$env:ELEVENLABS_API_KEY="your_key"
 $env:INSTAGRAM_ACCESS_TOKEN="your_token"
 $env:INSTAGRAM_USER_ID="your_user_id"
 $env:PEXELS_API_KEY="your_pexels_key"
 $env:UNSPLASH_ACCESS_KEY="your_unsplash_key"
-$env:POST_TYPE="photo"
 python -u poster.py
 
 ```
-Bash (Linux / macOS):
+### Bash (Linux / macOS):
 ```bash
 export GEMINI_API_KEY="your_key"
+export OPENROUTER_API_KEY="your_key"
+export GROQ_API_KEY="your_key"
+export NVIDIA_API_KEY="your_key"
+export ELEVENLABS_API_KEY="your_key"
 export INSTAGRAM_ACCESS_TOKEN="your_token"
 export INSTAGRAM_USER_ID="your_user_id"
 export PEXELS_API_KEY="your_pexels_key"
 export UNSPLASH_ACCESS_KEY="your_unsplash_key"
-export POST_TYPE="photo"
 python -u poster.py
 
 ```
----
-
 ## 🧾 License
-
-This project is licensed under the **Attribution Required License**. See the full terms in the [LICENSE](LICENSE) file.
-
-> **Attribution Requirement**  
-> You are free to copy, modify, and distribute this software for personal or commercial automation, but visible credit to **Areeb Khan** is strictly required in derivative works or documentations.
-
----
-
-<div align="center">
-
-*Built for people who want poetry, automation, and aesthetics in the same room.*
-
-</div>
-
+This project is licensed under the Attribution Required License. See the terms in the LICENSE file.
+*Built for people who want psychology, automation, and aesthetics in the same room.*
+```
