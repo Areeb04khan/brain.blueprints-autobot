@@ -1,22 +1,12 @@
-name: Daily Shayari Post
+name: Brain Blueprints Reel Automation
 
 on:
   schedule:
-    - cron: '30 2 * * *'  # 2:30 AM UTC = 8:00 AM IST - Photo
-    - cron: '30 13 * * *' # 1:30 PM UTC = 7:00 PM IST - Reel
+    - cron: '0 2,10,18 * * *'  # Runs 3 times a day
   workflow_dispatch:
-    inputs:
-      post_type:
-        description: 'Post type: photo or reel'
-        required: true
-        default: 'photo'
-        type: choice
-        options:
-          - photo
-          - reel
 
 jobs:
-  post-shayari:
+  post-reel:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -41,25 +31,6 @@ jobs:
           pip uninstall -y google-generativeai
           pip install google-genai requests pillow moviepy==1.0.3 numpy elevenlabs edge-tts asyncio openai
 
-      - name: Restore progress
-        uses: actions/cache@v4
-        with:
-          path: progress.json
-          key: progress-${{ github.run_id }}-${{ github.run_number }}
-          restore-keys: |
-            progress-
-
-      - name: Determine post type
-        id: post_type
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "type=${{ github.event.inputs.post_type }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "30 2 * * *" ]; then
-            echo "type=photo" >> "$GITHUB_OUTPUT"
-          else
-            echo "type=reel" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Run Bot Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -71,6 +42,5 @@ jobs:
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          POST_TYPE: ${{ steps.post_type.outputs.type }}
           MEDIA_HOST: tempfile
         run: python -u poster.py
