@@ -8,7 +8,12 @@ on:
 jobs:
   post-reel:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # Bumped 25 -> 30. poster.py now retries every external call (AI, TTS,
+    # media upload, Instagram) instead of failing on the first hiccup, which
+    # adds a bit of worst-case runtime. This is a ceiling, not a target --
+    # it costs nothing unless a run actually needs it. A normal successful
+    # run still finishes in 2-5 minutes, same as before.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -29,7 +34,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip uninstall -y google-generativeai
-          pip install google-genai requests pillow moviepy==1.0.3 numpy elevenlabs edge-tts asyncio openai
+          # Versions pinned to the exact set that worked in the last successful
+          # run (confirmed from your Aug 1 job log). Unpinned deps mean a
+          # brand-new release of any of these libraries could silently change
+          # behavior overnight, with zero code changes on your side -- pinning
+          # protects against that entire class of "it worked yesterday" bug.
+          # NOTE: "asyncio" was removed from this list -- it's part of the
+          # Python standard library since 3.4, the PyPI package by that name
+          # is an unrelated leftover backport for Python 2 and isn't needed.
+          pip install \
+            google-genai==2.16.0 \
+            requests==2.34.2 \
+            pillow==12.3.0 \
+            moviepy==1.0.3 \
+            numpy==2.4.6 \
+            elevenlabs==2.60.0 \
+            edge-tts==7.2.8 \
+            openai==2.52.0
 
       - name: Run Bot Script
         env:
@@ -42,5 +63,5 @@ jobs:
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
-          MEDIA_HOST: tempfile
+          MEDIA_HOST: tempfile  # informational only -- poster.py always tries tempfile.org then catbox.moe automatically
         run: python -u poster.py
