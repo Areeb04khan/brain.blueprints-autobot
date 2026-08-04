@@ -1,11 +1,11 @@
 {
-  "next_column": 2,
+  "next_column": 3,
   "column_subtype_index": {
     "1": 2,
-    "2": 1,
+    "2": 2,
     "3": 1
   },
-  "last_updated": "2026-08-04T16:10:51.752591",
+  "last_updated": "2026-08-04T23:01:15.300206",
   "history": [
     {
       "column": 1,
@@ -26,6 +26,11 @@
       "column": 1,
       "subtype": "warn",
       "at": "2026-08-04T16:10:51.752591"
+    },
+    {
+      "column": 2,
+      "subtype": "notice",
+      "at": "2026-08-04T23:01:15.300206"
     }
   ]
 }
