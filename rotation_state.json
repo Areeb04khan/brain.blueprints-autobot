@@ -1,0 +1,16 @@
+{
+  "next_column": 2,
+  "column_subtype_index": {
+    "1": 1,
+    "2": 0,
+    "3": 0
+  },
+  "last_updated": "2026-08-04T09:33:56.078163",
+  "history": [
+    {
+      "column": 1,
+      "subtype": "command",
+      "at": "2026-08-04T09:33:56.078163"
+    }
+  ]
+}
