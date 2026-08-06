@@ -1,11 +1,11 @@
 {
-  "next_column": 3,
+  "next_column": 1,
   "column_subtype_index": {
     "1": 0,
     "2": 0,
-    "3": 2
+    "3": 0
   },
-  "last_updated": "2026-08-05T22:56:45.667790",
+  "last_updated": "2026-08-06T09:38:04.681444",
   "history": [
     {
       "column": 1,
@@ -46,6 +46,11 @@
       "column": 2,
       "subtype": "become",
       "at": "2026-08-05T22:56:45.667790"
+    },
+    {
+      "column": 3,
+      "subtype": "truth",
+      "at": "2026-08-06T09:38:04.681444"
     }
   ]
 }
