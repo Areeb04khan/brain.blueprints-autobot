@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Brain Blueprints Bot v6.3 (Multi-Tier AI, TTS & Media-Host Failover Engine
+Brain Blueprints Bot v6.4 (Multi-Tier AI, TTS & Media-Host Failover Engine
                             + 3-Column Grid Rotation System)
 - AI Chain:    Gemini -> OpenRouter -> Groq -> NVIDIA NIM
 - TTS Chain:   ElevenLabs -> Groq TTS -> Edge-TTS
