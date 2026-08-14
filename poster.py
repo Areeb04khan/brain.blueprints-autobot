@@ -74,6 +74,7 @@ v6.2 CHANGELOG (hardening pass, Aug 2026) -- what changed and why:
       just skips -- the next scheduled run 8 hours later will retry fresh).
 """
 
+BOT_VERSION = "v6.3"
 import PIL.Image
 if not hasattr(PIL.Image, 'ANTIALIAS'):
     PIL.Image.ANTIALIAS = getattr(PIL.Image, 'Resampling', PIL.Image).LANCZOS
@@ -1143,6 +1144,7 @@ def post_to_instagram(media_path: str, caption: str) -> bool:
 # MAIN
 # ============================================================
 def run():
+    print ( f"📦 Bot version: {BOT_VERSION}")
     validate_environment()
 
     # ---- pick this run's column/sub-type from the rotation tracker ----
