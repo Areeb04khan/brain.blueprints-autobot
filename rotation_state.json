@@ -1,17 +1,12 @@
 {
-  "next_column": 1,
+  "next_column": 2,
   "column_subtype_index": {
-    "1": 2,
+    "1": 0,
     "2": 2,
     "3": 2
   },
-  "last_updated": "2026-08-25T07:41:29.102713",
+  "last_updated": "2026-08-25T14:42:10.778189",
   "history": [
-    {
-      "column": 1,
-      "subtype": "warn",
-      "at": "2026-08-21T14:35:52.603387"
-    },
     {
       "column": 2,
       "subtype": "notice",
@@ -66,6 +61,11 @@
       "column": 3,
       "subtype": "story",
       "at": "2026-08-25T07:41:29.102713"
+    },
+    {
+      "column": 1,
+      "subtype": "sit_with",
+      "at": "2026-08-25T14:42:10.778189"
     }
   ]
 }
