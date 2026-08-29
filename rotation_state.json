@@ -1,17 +1,12 @@
 {
-  "next_column": 2,
+  "next_column": 3,
   "column_subtype_index": {
     "1": 2,
-    "2": 1,
+    "2": 2,
     "3": 1
   },
-  "last_updated": "2026-08-29T03:28:43.759901",
+  "last_updated": "2026-08-29T12:57:33.896493",
   "history": [
-    {
-      "column": 2,
-      "subtype": "do",
-      "at": "2026-08-23T22:18:44.240898"
-    },
     {
       "column": 3,
       "subtype": "rule",
@@ -66,6 +61,11 @@
       "column": 1,
       "subtype": "warn",
       "at": "2026-08-29T03:28:43.759901"
+    },
+    {
+      "column": 2,
+      "subtype": "notice",
+      "at": "2026-08-29T12:57:33.896493"
     }
   ]
 }
