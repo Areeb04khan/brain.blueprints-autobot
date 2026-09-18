@@ -1,17 +1,12 @@
 {
-  "next_column": 3,
+  "next_column": 1,
   "column_subtype_index": {
     "1": 0,
     "2": 0,
-    "3": 2
+    "3": 0
   },
-  "last_updated": "2026-09-18T12:03:48.674358",
+  "last_updated": "2026-09-18T17:28:40.178088",
   "history": [
-    {
-      "column": 3,
-      "subtype": "story",
-      "at": "2026-09-14T19:00:50.096088"
-    },
     {
       "column": 1,
       "subtype": "sit_with",
@@ -66,6 +61,11 @@
       "column": 2,
       "subtype": "become",
       "at": "2026-09-18T12:03:48.674358"
+    },
+    {
+      "column": 3,
+      "subtype": "truth",
+      "at": "2026-09-18T17:28:40.178088"
     }
   ]
 }
