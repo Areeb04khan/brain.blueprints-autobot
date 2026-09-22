@@ -1,17 +1,12 @@
 {
-  "next_column": 3,
+  "next_column": 1,
   "column_subtype_index": {
     "1": 1,
     "2": 1,
-    "3": 0
+    "3": 1
   },
-  "last_updated": "2026-09-22T12:20:35.681049",
+  "last_updated": "2026-09-22T17:56:18.521791",
   "history": [
-    {
-      "column": 3,
-      "subtype": "truth",
-      "at": "2026-09-18T17:28:40.178088"
-    },
     {
       "column": 1,
       "subtype": "command",
@@ -66,6 +61,11 @@
       "column": 2,
       "subtype": "do",
       "at": "2026-09-22T12:20:35.681049"
+    },
+    {
+      "column": 3,
+      "subtype": "rule",
+      "at": "2026-09-22T17:56:18.521791"
     }
   ]
 }
