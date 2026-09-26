@@ -969,13 +969,13 @@ def generate_content(subtype: dict) -> dict:
             "name": "Groq",
             "api_key": GROQ_API_KEY,
             "base_url": "https://api.groq.com/openai/v1",
-            "model": "llama-3.3-70b-versatile"
+            "model": "openai/gpt-oss-120b"
         },
         {
             "name": "NVIDIA NIM",
             "api_key": NVIDIA_API_KEY,
             "base_url": "https://integrate.api.nvidia.com/v1",
-            "model": "meta/llama-3.1-70b-instruct"
+            "model": "meta/llama-3.3-70b-instruct"
         }
     ]
 
