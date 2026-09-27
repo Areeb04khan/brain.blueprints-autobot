@@ -1,6 +1,6 @@
 {
-  "next_field_index": 0,
-  "last_updated": "2026-09-27T16:38:03.882215",
+  "next_field_index": 1,
+  "last_updated": "2026-09-27T18:03:03.028805",
   "history": [
     {
       "field": "sehat",
@@ -21,6 +21,10 @@
     {
       "field": "adhyatm",
       "at": "2026-09-27T16:38:03.882215"
+    },
+    {
+      "field": "sehat",
+      "at": "2026-09-27T18:03:03.028805"
     }
   ]
 }
