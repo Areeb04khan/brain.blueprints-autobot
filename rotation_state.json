@@ -1,6 +1,6 @@
 {
-  "next_field_index": 2,
-  "last_updated": "2026-09-28T00:17:31.298504",
+  "next_field_index": 3,
+  "last_updated": "2026-09-28T16:22:53.353873",
   "history": [
     {
       "field": "sehat",
@@ -29,6 +29,10 @@
     {
       "field": "rishtey",
       "at": "2026-09-28T00:17:31.298504"
+    },
+    {
+      "field": "career_paisa",
+      "at": "2026-09-28T16:22:53.353873"
     }
   ]
 }
