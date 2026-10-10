@@ -1,12 +1,7 @@
 {
-  "next_field_index": 1,
-  "last_updated": "2026-10-10T13:16:59.947000",
+  "next_field_index": 2,
+  "last_updated": "2026-10-10T18:13:48.363248",
   "history": [
-    {
-      "field": "adhyatm",
-      "at": "2026-10-05T15:32:28.268335",
-      "topic": "रिश्ते में खोने के डर से हर बात मान लेना"
-    },
     {
       "field": "sehat",
       "at": "2026-10-06T02:03:36.626978",
@@ -61,6 +56,11 @@
       "field": "sehat",
       "at": "2026-10-10T13:16:59.947000",
       "topic": "दिन भर लैपटॉप के आगे झुककर बैठने की आदत"
+    },
+    {
+      "field": "rishtey",
+      "at": "2026-10-10T18:13:48.363248",
+      "topic": "Rishton mein apni keemat ghat na karein"
     }
   ]
 }
