@@ -1,12 +1,7 @@
 {
-  "next_field_index": 3,
-  "last_updated": "2026-10-30T13:49:11.955287",
+  "next_field_index": 4,
+  "last_updated": "2026-10-30T18:58:51.003701",
   "history": [
-    {
-      "field": "rishtey",
-      "at": "2026-10-10T18:13:48.363248",
-      "topic": "Rishton mein apni keemat ghat na karein"
-    },
     {
       "field": "career_paisa",
       "at": "2026-10-11T00:40:14.112427",
@@ -61,6 +56,11 @@
       "field": "career_paisa",
       "at": "2026-10-30T13:49:11.955287",
       "topic": "रोज़ाना खर्चों का ट्रैकिंग बचत के लिए"
+    },
+    {
+      "field": "anushasan",
+      "at": "2026-10-30T18:58:51.003701",
+      "topic": "सुबह उठते ही फ़ोन चेक करने की आदत"
     }
   ]
 }
